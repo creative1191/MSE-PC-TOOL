@@ -90,7 +90,7 @@ Extract these exact fields into JSON:
 - consignorAddress: Sender address (from BILL FROM)
 - consignorPhone: Sender phone / mobile
 - consignorGstin: Sender GSTIN if visible (e.g. 23BCPPD5853C1ZT)
-- contentSpec: Content specification / description (e.g. Milk analyser, LAPTOP, DOCUMENTS)
+- contentSpec: Content specification / item description (MUST NOT be empty. Extract primary goods/product name from Item Description, Description of Goods, Product Name, Commodity, or Title. If not explicitly found, infer from the document context e.g. "ELECTRIC ITEMS", "LAPTOP", "DOCUMENTS", "CLOTHING", "MEDICINES", "AUTO PARTS")
 - declaredValue: Declared value number or total amount (e.g. 10000)
 - pieces: Number of pieces (e.g. 1)
 - actualWeight: Actual weight string (e.g. 0.23 Kgs, 2.5 Kgs, 500 Gms)

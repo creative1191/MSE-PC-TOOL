@@ -127,15 +127,21 @@ export const ShipmentSpecsForm: React.FC<ShipmentSpecsFormProps> = React.memo(({
       </div>
 
       <div className="grid grid-cols-3 gap-2 pt-1 border-t border-gray-100">
-        <div>
-          <label className="block text-[10px] font-semibold text-gray-600 mb-0.5">
-            Content:
-          </label>
+        <div className="col-span-1">
+          <div className="flex items-center justify-between mb-0.5">
+            <label className="block text-[10px] font-semibold text-gray-600">
+              Content Spec:
+            </label>
+            {!billData.contentSpec && (
+              <span className="text-[9px] text-amber-600 font-bold">Auto-Fill</span>
+            )}
+          </div>
           <input
             type="text"
+            placeholder="e.g. ELECTRIC ITEMS"
             value={billData.contentSpec}
-            onChange={(e) => onUpdateField('contentSpec', e.target.value)}
-            className="w-full border border-gray-300 rounded px-2 py-1 font-semibold"
+            onChange={(e) => onUpdateField('contentSpec', e.target.value.toUpperCase())}
+            className="w-full border border-gray-300 rounded px-2 py-1 font-semibold text-gray-900 bg-white"
           />
         </div>
         <div>
@@ -160,6 +166,34 @@ export const ShipmentSpecsForm: React.FC<ShipmentSpecsFormProps> = React.memo(({
             className="w-full border border-gray-300 rounded px-2 py-1 font-mono"
           />
         </div>
+      </div>
+
+      {/* Quick 1-Click Content Presets */}
+      <div className="flex flex-wrap items-center gap-1 pt-0.5">
+        <span className="text-[9.5px] font-bold text-gray-400 mr-0.5">Auto-Fill:</span>
+        {[
+          'ELECTRIC ITEMS',
+          'DOCUMENTS',
+          'LAPTOP & CHARGER',
+          'CLOTHING',
+          'MEDICINES',
+          'AUTO SPARE PARTS',
+          'BOOKS',
+          'MILK ANALYSER',
+        ].map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => onUpdateField('contentSpec', item)}
+            className={`text-[9.5px] px-1.5 py-0.5 rounded cursor-pointer transition-colors border ${
+              billData.contentSpec === item
+                ? 'bg-blue-600 text-white border-blue-700 font-bold shadow-2xs'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-200'
+            }`}
+          >
+            {item}
+          </button>
+        ))}
       </div>
 
       <div className="grid grid-cols-3 gap-2">

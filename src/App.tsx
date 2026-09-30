@@ -157,7 +157,7 @@ export default function App() {
         consignorPhone: extracted.consignorPhone || prev.consignorPhone,
         consignorGstin: extracted.consignorGstin || prev.consignorGstin,
         // SHIPMENT SPECS
-        contentSpec: extracted.contentSpec || prev.contentSpec,
+        contentSpec: extracted.contentSpec || prev.contentSpec || (extracted.type === 'DOCUMENT' ? 'DOCUMENTS' : 'ELECTRIC ITEMS'),
         declaredValue: extracted.declaredValue || prev.declaredValue,
         pieces: extracted.pieces || prev.pieces,
         actualWeight: extracted.actualWeight || prev.actualWeight,
@@ -182,7 +182,7 @@ export default function App() {
       consigneeEmail: '',
       origin: 'SATNA',
       dest: '',
-      contentSpec: '',
+      contentSpec: 'ELECTRIC ITEMS',
       paperworkEnclosed: '',
       declaredValue: 'Not Applicable',
       actualWeight: '',

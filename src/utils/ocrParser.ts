@@ -509,12 +509,43 @@ export function parseCourierOcrText(rawText: string, preferredCourier?: CourierT
   }
 
   // ================= 6. CONTENT SPECIFICATION & VALUE =================
-  const contentMatch = rawText.match(/(?:Item\s*Desc(?:ription)?|Content\s*(?:Specification)?|Description|Commodity)\s*[:\-]?\s*([A-Za-z0-9\s,\-]+?)(?:\n|SKU|Qty|Declared|Value|Weight|Pieces|Date|Rs|₹|Total|$)/i);
+  // Comprehensive extraction for Item Description, Goods, Commodity, and Products
+  const contentMatch = rawText.match(
+    /(?:Item\s*Desc(?:ription)?|Product\s*(?:Description|Name|Title)?|Description\s*Of\s*Goods|Nature\s*Of\s*Goods|Goods\s*Description|Content\s*(?:Specification)?|Contents|Commodity|Particulars|Item\s*Name|\bItems\b|\bContent\b)\s*[:\-]?\s*([A-Za-z0-9\s,\/\.\-&]{2,60}?)(?:\n|SKU|Qty|Declared|Value|Weight|Pieces|Date|Rs|₹|Total|Rate|Tax|HSN|$)/i
+  );
   if (contentMatch && contentMatch[1]) {
-    const cleanContent = contentMatch[1].trim();
-    if (cleanContent.length >= 2 && cleanContent.length <= 40 && !cleanContent.match(/^(sku|qty|rate|tax|total)/i)) {
+    const cleanContent = contentMatch[1].replace(/^(?:of|for|is)\s+/i, '').trim();
+    if (cleanContent.length >= 2 && cleanContent.length <= 50 && !cleanContent.match(/^(sku|qty|rate|tax|total|amount|inr|hsn|price)/i)) {
       result.contentSpec = cleanContent.toUpperCase();
     }
+  }
+
+  // Fallback 1: Scan for common product types if not explicitly matched above
+  if (!result.contentSpec) {
+    const commonCategories = [
+      { pattern: /\b(?:milk\s*analys(?:er|or)|milk\s*tester)\b/i, name: 'MILK ANALYSER' },
+      { pattern: /\b(?:electric\s*items?|electrical|electronics?)\b/i, name: 'ELECTRIC ITEMS' },
+      { pattern: /\b(?:laptop|notebook|computer|desktop)\b/i, name: 'LAPTOP & ACCESSORIES' },
+      { pattern: /\b(?:mobile|smartphone|phone\s*accessories)\b/i, name: 'MOBILE PHONE & ACCESSORIES' },
+      { pattern: /\b(?:documents?|papers?|legal\s*papers?|agreements?)\b/i, name: 'DOCUMENTS' },
+      { pattern: /\b(?:cloth(?:es|ing)?|garments?|saree|dress|textile|apparel)\b/i, name: 'CLOTHING & APPAREL' },
+      { pattern: /\b(?:medicines?|pharmaceuticals?|tablets?|capsules?)\b/i, name: 'MEDICINES' },
+      { pattern: /\b(?:auto\s*parts?|automobile|vehicle\s*parts?|spare\s*parts?)\b/i, name: 'AUTO SPARE PARTS' },
+      { pattern: /\b(?:books?|study\s*material|stationery)\b/i, name: 'BOOKS & STATIONERY' },
+      { pattern: /\b(?:hardware|tools?|industrial\s*goods)\b/i, name: 'HARDWARE TOOLS' },
+    ];
+
+    for (const cat of commonCategories) {
+      if (cat.pattern.test(rawText)) {
+        result.contentSpec = cat.name;
+        break;
+      }
+    }
+  }
+
+  // Fallback 2: Default standard content specification so it is NEVER empty
+  if (!result.contentSpec) {
+    result.contentSpec = result.type === 'DOCUMENT' ? 'DOCUMENTS' : 'ELECTRIC ITEMS';
   }
 
   const declaredMatch = rawText.match(/(?:Declared\s*Value|Total(?:\s*INR)?|Invoice\s*Value|COD\s*Amount)\s*[:\-]?\s*(?:Rs\.?|₹|INR)?\s*([0-9]+(?:\.[0-9]{2})?)/i);
