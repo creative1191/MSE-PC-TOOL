@@ -18,8 +18,8 @@ export const PythonBuildExport: React.FC = () => {
     workflow: {
       filename: '.github/workflows/build-exe.yml',
       title: 'GitHub Actions Workflow (100% Offline Windows EXE)',
-      description: 'Automatically compiles full production web app and packages it into standalone offline DTDC_Bill_Generator.exe',
-      content: `name: Build DTDC Offline EXE
+      description: 'Automatically compiles full production web app and packages it into standalone offline Customer_Invoice_Generator.exe',
+      content: `name: Build Customer Invoice Generator Offline EXE
 on:
   push:
     branches: [ main, master ]
@@ -39,7 +39,9 @@ jobs:
 
       - name: Install dependencies
         shell: bash
-        run: npm install --legacy-peer-deps
+        run: |
+          rm -f package-lock.json
+          npm install --legacy-peer-deps --include=optional
 
       - name: Build web frontend assets
         shell: bash
@@ -63,20 +65,20 @@ jobs:
       - name: Verify EXE Output
         shell: bash
         run: |
-          if [ -f "dist_exe/DTDC_Bill_Generator.exe" ]; then
-            echo "DTDC_Bill_Generator.exe generated successfully!"
-            ls -lh dist_exe/DTDC_Bill_Generator.exe
+          if [ -f "dist_exe/Customer_Invoice_Generator.exe" ]; then
+            echo "Customer_Invoice_Generator.exe generated successfully!"
+            ls -lh dist_exe/Customer_Invoice_Generator.exe
           else
-            echo "ERROR: dist_exe/DTDC_Bill_Generator.exe was not found"
+            echo "ERROR: dist_exe/Customer_Invoice_Generator.exe was not found"
             ls -la dist_exe/ || true
             exit 1
           fi
 
-      - name: Upload Artifact (DTDC_Bill_Generator.exe)
+      - name: Upload Artifact (Customer_Invoice_Generator.exe)
         uses: actions/upload-artifact@v4
         with:
-          name: DTDC_Bill_Generator-Windows-EXE
-          path: dist_exe/DTDC_Bill_Generator.exe
+          name: Customer_Invoice_Generator-Windows-EXE
+          path: dist_exe/Customer_Invoice_Generator.exe
 `,
     },
     bat: {
@@ -165,18 +167,18 @@ if %ERRORLEVEL% neq 0 (
 
 :: 6. Completion
 echo.
-if exist dist_exe\\DTDC_Bill_Generator.exe (
+if exist dist_exe\\Customer_Invoice_Generator.exe (
     echo ========================================================
     echo  BUILD COMPLETE!
     echo  Your 100%% Offline App is ready at:
-    echo  dist_exe\\DTDC_Bill_Generator.exe
+    echo  dist_exe\\Customer_Invoice_Generator.exe
     echo ========================================================
     echo.
     echo Opening output folder in Windows Explorer...
     start "" "dist_exe"
 ) else (
     echo ========================================================
-    echo  [WARNING] Output file dist_exe\\DTDC_Bill_Generator.exe
+    echo  [WARNING] Output file dist_exe\\Customer_Invoice_Generator.exe
     echo  was not detected.
     echo ========================================================
 )

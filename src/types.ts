@@ -93,6 +93,8 @@ export interface OCRMatchResult {
   consigneeName?: string;
   consigneeAddress?: string;
   consigneePhone?: string;
+  consigneeGstin?: string;
+  customerRefNo?: string;
   consignorName?: string;
   consignorAddress?: string;
   consignorPhone?: string;

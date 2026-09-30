@@ -82,8 +82,10 @@ Extract these exact fields into JSON:
 - mode: "AIR" or "SURFACE"
 - date: Date string found on receipt (e.g. 2026-9-23, Sat Sep 19 2026)
 - consigneeName: Full name of consignee / recipient (from SHIPPING ADDRESS only)
-- consigneeAddress: Full clean single address of consignee (from SHIPPING ADDRESS only, NO billing address, NO duplicates)
-- consigneePhone: Phone / mobile number of consignee
+- consigneeAddress: Full clean single address of consignee with PIN code (from SHIPPING ADDRESS only, NO billing address, NO duplicates)
+- consigneePhone: Phone / mobile number of consignee / recipient
+- customerRefNo: Customer Reference Number / Order Number / Invoice ID if present
+- consigneeGstin: Recipient GSTIN if present
 - consignorName: Sender / Shipper / Consignor name (from BILL FROM or SOLD BY)
 - consignorAddress: Sender address (from BILL FROM)
 - consignorPhone: Sender phone / mobile

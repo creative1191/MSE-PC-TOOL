@@ -25,8 +25,10 @@ export const A4LabelSheet: React.FC<A4LabelSheetProps> = ({
         minHeight: '297mm',
         boxSizing: 'border-box',
         padding: '5mm',
-        pageBreakAfter: 'always',
-        breakAfter: 'page',
+        pageBreakAfter: sheetIndex < totalSheets - 1 ? 'always' : 'auto',
+        breakAfter: sheetIndex < totalSheets - 1 ? 'page' : 'auto',
+        pageBreakBefore: 'avoid',
+        breakBefore: 'avoid',
       }}
     >
       {/* Visual Sheet Header (Visible on screen preview, hidden on print) */}

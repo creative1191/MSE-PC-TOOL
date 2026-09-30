@@ -1,6 +1,9 @@
 node_modules/
 build/
 dist/
+dist_exe/
+build_work/
+*.spec
 coverage/
 .DS_Store
 *.log

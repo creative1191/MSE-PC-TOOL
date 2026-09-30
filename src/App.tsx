@@ -1,11 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { ShieldCheck } from 'lucide-react';
 import { DTDCBillData, PresetLabel, OCRMatchResult, CourierType } from './types';
 import { INITIAL_BILL_DATA } from './data/defaults';
 import { COURIER_CONFIGS, COURIER_PRESETS, generateAwbNumber } from './data/courierConfigs';
 import { WindowsTitlebar } from './components/WindowsTitlebar';
-import { CourierTabs } from './components/CourierTabs';
-import { WorkspaceNavBar } from './components/WorkspaceNavBar';
+import { HomeNavigationTabs, ActiveNavTab } from './components/HomeNavigationTabs';
 import { QuickPresetsBar } from './components/QuickPresetsBar';
 import { ConsignorForm } from './components/ConsignorForm';
 import { CourierChargesCard } from './components/CourierChargesCard';
@@ -15,7 +13,6 @@ import { BookingBranchCard } from './components/BookingBranchCard';
 import { BillExportBar } from './components/BillExportBar';
 import { PrintSheet } from './components/PrintSheet';
 import { SnipToolHandler } from './components/SnipToolHandler';
-import { PythonBuildExport } from './components/PythonBuildExport';
 import { LockedSettingsModal } from './components/LockedSettingsModal';
 import { LabelPrintingManager } from './components/LabelPrinting/LabelPrintingManager';
 import { downloadBillAsPdf, downloadBillAsPng, downloadBillAsHtml } from './utils/exportHelpers';
@@ -27,7 +24,7 @@ export default function App() {
     ...INITIAL_BILL_DATA,
     courier: 'DTDC',
   }));
-  const [activeTab, setActiveTab] = useState<'generator' | 'label-printing' | 'build-files'>('generator');
+  const [activeTab, setActiveTab] = useState<'generator' | 'label-printing'>('generator');
   const [customLogoUrl, setCustomLogoUrl] = useState<string | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -36,7 +33,7 @@ export default function App() {
 
   const printAreaRef = useRef<HTMLDivElement | null>(null);
 
-  // Memoized configuration and presets for zero-lag rendering
+  // Memoized configuration and presets for instant rendering
   const currentConfig = useMemo(
     () => COURIER_CONFIGS[selectedCourier] || COURIER_CONFIGS.DTDC,
     [selectedCourier]
@@ -46,7 +43,15 @@ export default function App() {
     [selectedCourier]
   );
 
-  // Direct print handler
+  // Compute active navigation tab for the 4-tab Home Navigation
+  const activeNavTab: ActiveNavTab = useMemo(() => {
+    if (activeTab === 'label-printing') return 'label-printing';
+    if (selectedCourier === 'BLUEDART') return 'bluedart-generator';
+    if (selectedCourier === 'DELHIVERY') return 'delhivery-generator';
+    return 'dtdc-generator';
+  }, [activeTab, selectedCourier]);
+
+  // Direct print handler: triggers native print dialog directly on Page 1 without phantom blank page
   const handleDirectPrint = useCallback(() => {
     window.print();
   }, []);
@@ -86,6 +91,22 @@ export default function App() {
     }
   }, []);
 
+  // Navigation tab switcher for the 4 main tabs
+  const handleSelectNavTab = useCallback((tab: ActiveNavTab) => {
+    if (tab === 'label-printing') {
+      setActiveTab('label-printing');
+    } else if (tab === 'dtdc-generator') {
+      setActiveTab('generator');
+      handleSwitchCourier('DTDC');
+    } else if (tab === 'bluedart-generator') {
+      setActiveTab('generator');
+      handleSwitchCourier('BLUEDART');
+    } else if (tab === 'delhivery-generator') {
+      setActiveTab('generator');
+      handleSwitchCourier('DELHIVERY');
+    }
+  }, [handleSwitchCourier]);
+
   // Field change helper
   const updateField = useCallback((field: keyof DTDCBillData, value: any) => {
     setBillData((prev) => ({
@@ -100,7 +121,7 @@ export default function App() {
     updateField('awb', newAwb);
   }, [selectedCourier, updateField]);
 
-  // OCR extraction callback
+  // OCR extraction callback: Maps ALL available recipient details to input fields
   const handleOcrExtracted = useCallback((extracted: OCRMatchResult, detectedAwb?: string) => {
     // If OCR detected a different courier, sync active courier tab
     if (extracted.detectedCourier && extracted.detectedCourier !== selectedCourier) {
@@ -124,13 +145,18 @@ export default function App() {
         type: extracted.type || prev.type,
         mode: extracted.mode || prev.mode,
         date: extracted.date || prev.date,
+        // STRICT RECIPIENT / DESTINATION MAPPING
         consigneeName: targetConsigneeName,
         consigneeAddress: cleanConsigneeAddr,
         consigneePhone: extracted.consigneePhone || prev.consigneePhone,
+        customerRefNo: extracted.customerRefNo || prev.customerRefNo,
+        consigneeGstin: extracted.consigneeGstin || prev.consigneeGstin,
+        // CONSIGNOR DETAILS
         consignorName: extracted.consignorName || prev.consignorName,
         consignorAddress: extracted.consignorAddress || prev.consignorAddress,
         consignorPhone: extracted.consignorPhone || prev.consignorPhone,
         consignorGstin: extracted.consignorGstin || prev.consignorGstin,
+        // SHIPMENT SPECS
         contentSpec: extracted.contentSpec || prev.contentSpec,
         declaredValue: extracted.declaredValue || prev.declaredValue,
         pieces: extracted.pieces || prev.pieces,
@@ -225,47 +251,31 @@ export default function App() {
   }, [billData]);
 
   return (
-    <div className="min-h-screen bg-[#f1f4f9] text-[#1c1d1f] flex flex-col antialiased">
-      {/* 1. Windows Native Titlebar */}
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col antialiased">
+      {/* 1. Clean Rebranded Desktop Titlebar */}
       <WindowsTitlebar
         onPrint={handleDirectPrint}
-        activeLabel={billData.awb}
-        currentCourier={selectedCourier}
-        onSelectCourier={handleSwitchCourier}
-      />
-
-      {/* 2. Top Courier Selection Tabs (DTDC / Blue Dart / Delhivery) */}
-      <CourierTabs
-        selectedCourier={selectedCourier}
-        onSelectCourier={handleSwitchCourier}
-      />
-
-      {/* 3. Dashboard Navigation & Status Bar */}
-      <WorkspaceNavBar
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
-        currentConfig={currentConfig}
-        currentAwb={billData.awb}
         onOpenSettings={() => setShowSettingsModal(true)}
       />
 
-      {/* 4. Main Workspace Container */}
-      <main className="flex-1 p-3 md:p-4 max-w-[1920px] w-full mx-auto">
-        {activeTab === 'build-files' && (
-          <div className="no-print">
-            <PythonBuildExport />
-          </div>
-        )}
+      {/* 2. REQUIREMENT 3: Centered 4-Tab Home Navigation */}
+      <HomeNavigationTabs
+        activeTab={activeNavTab}
+        onSelectTab={handleSelectNavTab}
+        selectedCourier={selectedCourier}
+      />
 
+      {/* 3. Main Workspace Container with Smooth Fade Transitions */}
+      <main className="flex-1 p-3 md:p-5 max-w-[1920px] w-full mx-auto transition-all duration-300">
         {activeTab === 'label-printing' && (
-          <div>
+          <div className="animate-fadeIn">
             <LabelPrintingManager />
           </div>
         )}
 
         {activeTab === 'generator' && (
-          <div>
-            {/* Top Quick Presets Bar for Selected Courier */}
+          <div className="animate-fadeIn">
+            {/* Quick Presets Bar */}
             <QuickPresetsBar
               currentConfig={currentConfig}
               currentPresets={currentPresets}
@@ -276,9 +286,9 @@ export default function App() {
               onUpdateField={updateField}
             />
 
-            {/* Split Screen Layout: Editor on Left, Live Print Sheet on Right */}
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
-              {/* LEFT COLUMN: Input Form & Controls (5 Cols on xl) */}
+            {/* Split Screen Layout: Form & Live A4 Print Sheet */}
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+              {/* LEFT COLUMN: Input Form & Tools */}
               <div className="xl:col-span-5 space-y-3 no-print">
                 <SnipToolHandler
                   onDataExtracted={handleOcrExtracted}
@@ -317,7 +327,7 @@ export default function App() {
                 />
               </div>
 
-              {/* RIGHT COLUMN: Real-Time Preview & Quick Export Toolbar (7 Cols on xl) */}
+              {/* RIGHT COLUMN: Real-Time Preview & Quick Export */}
               <div className="xl:col-span-7 space-y-3">
                 <BillExportBar
                   currentConfig={currentConfig}
@@ -331,31 +341,19 @@ export default function App() {
                 />
 
                 {exportNotice && (
-                  <div className="p-2 bg-blue-50 border border-blue-200 text-blue-900 rounded text-xs font-semibold flex items-center justify-between no-print animate-fadeIn">
+                  <div className="p-2.5 bg-blue-50 border border-blue-200 text-blue-900 rounded-lg text-xs font-semibold flex items-center justify-between no-print shadow-2xs">
                     <span>{exportNotice}</span>
-                    <span className="text-[10px] text-blue-600">{currentConfig.shortName} System</span>
+                    <span className="text-[10px] text-blue-600 font-mono">{currentConfig.shortName}</span>
                   </div>
                 )}
 
                 {/* PREVIEW CONTAINER: EXACT A4 CANVAS */}
-                <div className="invoice-preview-wrapper bg-[#e4e7ee] p-2 md:p-4 rounded-xl border border-gray-300 shadow-inner overflow-x-auto flex justify-center">
+                <div className="invoice-preview-wrapper bg-slate-200/70 p-2 md:p-4 rounded-xl border border-slate-300 shadow-inner overflow-x-auto flex justify-center">
                   <PrintSheet
                     data={billData}
                     customLogoUrl={customLogoUrl}
                     sheetRef={printAreaRef}
                   />
-                </div>
-
-                <div className="bg-white rounded-lg border border-gray-200 p-2.5 text-[11px] text-gray-600 flex items-center justify-between no-print">
-                  <div className="flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span>
-                      Official {currentConfig.shortName} layout active: Code128 barcode, 200x92mm copies, POD signature block & custom logo enabled.
-                    </span>
-                  </div>
-                  <span className="font-mono text-gray-500 font-semibold">
-                    {currentConfig.website} verified
-                  </span>
                 </div>
               </div>
             </div>
@@ -363,7 +361,7 @@ export default function App() {
         )}
       </main>
 
-      {/* 5. Locked Settings Modal */}
+      {/* 4. Locked Settings Modal */}
       <LockedSettingsModal
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}

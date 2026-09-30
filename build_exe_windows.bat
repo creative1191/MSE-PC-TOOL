@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 echo ========================================================
-echo       DTDC Bill Generator - Windows EXE Builder
+echo   Customer Invoice Generator - Windows EXE Builder
 echo               (100%% Offline Desktop App)
 echo ========================================================
 echo.
@@ -80,18 +80,18 @@ if %ERRORLEVEL% neq 0 (
 
 :: 6. Completion
 echo.
-if exist dist_exe\DTDC_Bill_Generator.exe (
+if exist dist_exe\Customer_Invoice_Generator.exe (
     echo ========================================================
     echo  BUILD COMPLETE!
     echo  Your 100%% Offline App is ready at:
-    echo  dist_exe\DTDC_Bill_Generator.exe
+    echo  dist_exe\Customer_Invoice_Generator.exe
     echo ========================================================
     echo.
     echo Opening output folder in Windows Explorer...
     start "" "dist_exe"
 ) else (
     echo ========================================================
-    echo  [WARNING] Output file dist_exe\DTDC_Bill_Generator.exe
+    echo  [WARNING] Output file dist_exe\Customer_Invoice_Generator.exe
     echo  was not detected.
     echo ========================================================
 )

@@ -35,11 +35,11 @@ export const DtdcBillLayout: React.FC<DtdcBillLayoutProps> = ({
 
   const courierType = data.courier || 'DTDC';
   const courierConfig = COURIER_CONFIGS[courierType] || COURIER_CONFIGS.DTDC;
-  const heightClass = isLandscapeFull ? 'min-h-[175mm]' : 'min-h-[85mm] max-h-[88mm]';
+  const heightClass = isLandscapeFull ? 'min-h-[175mm]' : 'h-[85mm] min-h-[82mm] max-h-[85mm]';
 
   return (
     <div
-      className={`w-full ${heightClass} border-[1.5px] border-black bg-white text-black flex flex-col justify-between box-border overflow-hidden select-text`}
+      className={`invoice-card w-full ${heightClass} border-[1.5px] border-black border-solid bg-white text-black flex flex-col justify-between box-border overflow-hidden select-text`}
       style={{ fontFamily: 'Segoe UI, Arial, Helvetica, sans-serif' }}
     >
       {/* ================= 1. HEADER ROW ================= */}

@@ -47,7 +47,7 @@ export const PrintSheet: React.FC<PrintSheetProps> = ({
     <div
       ref={sheetRef}
       id="dtdc-print-area"
-      className={`print-container ${marginClass} bg-white w-full max-w-[210mm] min-h-[285mm] print:min-h-0 mx-auto shadow-md print:shadow-none flex flex-col justify-between`}
+      className={`print-container ${marginClass} bg-white w-full max-w-[210mm] min-h-[260mm] print:min-h-0 print:h-auto mx-auto shadow-md print:shadow-none flex flex-col justify-between`}
     >
       {/* COPY 1: Always Sender's Copy */}
       <DtdcBillLayout

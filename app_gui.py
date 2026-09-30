@@ -259,7 +259,7 @@ def show_error_dialog(message):
     if sys.platform == 'win32':
         try:
             import ctypes
-            ctypes.windll.user32.MessageBoxW(0, str(message), "DTDC Bill Generator - Error", 0x10)
+            ctypes.windll.user32.MessageBoxW(0, str(message), "Customer Invoice Generator - Error", 0x10)
             return
         except Exception:
             pass

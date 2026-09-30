@@ -26,33 +26,52 @@
   background: #9faec2;
 }
 
-/* Print specific rules for pixel-perfect A4 DTDC / Blue Dart / Delhivery receipts */
+/* =========================================================================
+   PRINT SPECIFIC RULES FOR DTDC, BLUE DART, AND DELHIVERY INVOICES & LABELS
+   - Fixes Requirement 3: Prevents phantom blank page; triggers directly on Page 1.
+   - Fixes Requirement 4: Enforces strict border visibility & print-color-adjust.
+   ========================================================================= */
 @media print {
+  /* Page Definition: Standard A4 without unneeded printer margins */
   @page {
     size: A4 portrait;
-    margin: 0;
-  }
-  @page landscape-page {
-    size: A4 landscape;
-    margin: 0;
+    margin: 0mm;
   }
 
-  html, body {
+  @page landscape-page {
+    size: A4 landscape;
+    margin: 0mm;
+  }
+
+  /* Universal print color adjustment enforcement */
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Root & Body: Zero margins/paddings to start strictly at top of Page 1 */
+  html,
+  body {
     background: #ffffff !important;
     color: #000000 !important;
     padding: 0 !important;
     margin: 0 !important;
-    width: 100% !important;
-    height: auto !important;
+    width: 210mm !important;
+    height: 100% !important;
     overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* Reset all surrounding wrapper layout containers so zero top offset or margins occur */
+  /* Collapse all non-printable wrappers and layout grids so no phantom spacing pushes to Page 2 */
   #root,
   .min-h-screen,
   main,
+  .grid,
   [class*="col-span"],
   [class*="space-y"],
   .invoice-preview-wrapper {
@@ -65,31 +84,49 @@
     width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
+    max-height: none !important;
     display: block !important;
     overflow: visible !important;
+    gap: 0 !important;
   }
 
-  .no-print {
+  /* Strict Screen-only Hiding */
+  .no-print,
+  nav,
+  header,
+  footer,
+  button,
+  .no-print * {
     display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
   }
 
   .print-only {
     display: block !important;
+    visibility: visible !important;
   }
 
+  /* =========================================================================
+     INVOICE CONTAINER: STRICT A4 PORTRAIT PAGINATION & ZERO PHANTOM PAGES
+     ========================================================================= */
   .print-container {
     width: 210mm !important;
     max-width: 210mm !important;
-    height: auto !important;
-    max-height: 285mm !important;
+    height: 297mm !important;
+    max-height: 297mm !important;
+    min-height: 0 !important;
     margin: 0 auto !important;
-    padding: 9mm 8mm 9mm 8mm !important; /* Default 9mm top header & 9mm bottom footer margins */
+    padding: 6mm 6mm !important;
     box-shadow: none !important;
     border: none !important;
     background: #ffffff !important;
     box-sizing: border-box !important;
-    page-break-before: avoid !important;
-    break-before: avoid !important;
+    page-break-before: auto !important;
+    break-before: auto !important;
     page-break-after: avoid !important;
     break-after: avoid !important;
     page-break-inside: avoid !important;
@@ -98,31 +135,33 @@
   }
 
   .print-container.margin-normal {
-    padding: 9mm 8mm 9mm 8mm !important;
+    padding: 6mm 6mm !important;
   }
 
   .print-container.margin-relaxed {
-    padding: 13mm 10mm 13mm 10mm !important;
+    padding: 9mm 8mm !important;
   }
 
   .print-container.margin-compact {
-    padding: 5mm 6mm 5mm 6mm !important;
+    padding: 4mm 5mm !important;
   }
 
+  /* LANDSCAPE INVOICE CONTAINER */
   .print-container-landscape {
     width: 297mm !important;
     max-width: 297mm !important;
-    height: auto !important;
-    max-height: 200mm !important;
+    height: 210mm !important;
+    max-height: 210mm !important;
+    min-height: 0 !important;
     margin: 0 auto !important;
-    padding: 9mm 10mm 9mm 10mm !important;
+    padding: 8mm 8mm !important;
     box-shadow: none !important;
     border: none !important;
     background: #ffffff !important;
     box-sizing: border-box !important;
     page: landscape-page;
-    page-break-before: avoid !important;
-    break-before: avoid !important;
+    page-break-before: auto !important;
+    break-before: auto !important;
     page-break-after: avoid !important;
     break-after: avoid !important;
     page-break-inside: avoid !important;
@@ -130,18 +169,87 @@
     overflow: hidden !important;
   }
 
-  .print-container-landscape.margin-normal {
-    padding: 9mm 10mm 9mm 10mm !important;
+  /* =========================================================================
+     REQUIREMENT 4: STRICT CSS BORDER ENFORCEMENT IN PRINT MODE
+     Guarantees that all table borders, box lines, and dividers render crisply.
+     ========================================================================= */
+  #dtdc-print-area,
+  #dtdc-print-area * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  .print-container-landscape.margin-relaxed {
-    padding: 13mm 12mm 13mm 12mm !important;
+  /* Structural invoice borders */
+  #dtdc-print-area .border-black,
+  #dtdc-print-area [class*="border-"],
+  #dtdc-print-area [class*="border"],
+  .print-container [class*="border"],
+  .print-container-landscape [class*="border"],
+  .invoice-card,
+  .invoice-box,
+  .invoice-border {
+    border-color: #000000 !important;
+    border-style: solid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  .print-container-landscape.margin-compact {
-    padding: 5mm 8mm 5mm 8mm !important;
+  /* Outer invoice card boundary */
+  #dtdc-print-area .border-\[1\.5px\],
+  #dtdc-print-area .border-2,
+  #dtdc-print-area .invoice-card {
+    border: 1.5px solid #000000 !important;
   }
 
+  /* Internal dividers and grid lines */
+  #dtdc-print-area .border-b-\[1\.5px\],
+  #dtdc-print-area div[class*="border-b"],
+  #dtdc-print-area [class*="border-b"] {
+    border-bottom: 1.5px solid #000000 !important;
+  }
+
+  #dtdc-print-area .border-r-\[1\.5px\],
+  #dtdc-print-area div[class*="border-r"],
+  #dtdc-print-area [class*="border-r"] {
+    border-right: 1.5px solid #000000 !important;
+  }
+
+  #dtdc-print-area .border-t-\[1\.5px\],
+  #dtdc-print-area div[class*="border-t"],
+  #dtdc-print-area [class*="border-t"] {
+    border-top: 1.5px solid #000000 !important;
+  }
+
+  #dtdc-print-area .border-l-\[1\.5px\],
+  #dtdc-print-area div[class*="border-l"],
+  #dtdc-print-area [class*="border-l"] {
+    border-left: 1.5px solid #000000 !important;
+  }
+
+  /* Strict table border rendering */
+  table,
+  th,
+  td {
+    border-collapse: collapse !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  table.invoice-table,
+  table.invoice-table th,
+  table.invoice-table td {
+    border: 1px solid #000000 !important;
+  }
+
+  /* Checkbox and small border boxes */
+  #dtdc-print-area .border,
+  #dtdc-print-area .border-black {
+    border: 1px solid #000000 !important;
+  }
+
+  /* =========================================================================
+     LABEL PRINTING 4-UP MULTI-PAGE PAGINATION
+     ========================================================================= */
   .a4-sheet-container {
     width: 210mm !important;
     max-width: 210mm !important;
@@ -153,6 +261,8 @@
     box-shadow: none !important;
     border: none !important;
     background: #ffffff !important;
+    page-break-before: auto !important;
+    break-before: auto !important;
   }
 
   .label-print-stage {
@@ -167,6 +277,8 @@
   .print-page-wrapper {
     page-break-after: always !important;
     break-after: page !important;
+    page-break-before: auto !important;
+    break-before: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     width: 210mm !important;
@@ -176,14 +288,25 @@
     page-break-after: auto !important;
     break-after: auto !important;
   }
-
-  .page-break {
-    page-break-after: always;
-    break-after: page;
-  }
 }
 
 /* Barcode styling */
 .barcode-text {
   font-family: 'Libre Barcode 128', cursive, monospace;
+}
+
+/* Smooth tab transition animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

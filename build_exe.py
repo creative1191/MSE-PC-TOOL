@@ -4,13 +4,14 @@ import shutil
 import subprocess
 
 def main():
-    print("=== DTDC Bill Generator - Windows EXE Builder ===")
+    print("=== Customer Invoice Generator - Windows EXE Builder ===")
     
     base_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(base_dir)
     
     web_app_dir = os.path.join(base_dir, "web_app")
     dist_dir = os.path.join(base_dir, "dist")
+    icon_path = os.path.join(base_dir, "public", "app-icon.ico")
     
     # 1. Always ensure web_app has the latest built assets from dist
     if os.path.isdir(dist_dir) and os.path.isfile(os.path.join(dist_dir, "index.html")):
@@ -51,7 +52,7 @@ def main():
     
     args = [
         "app_gui.py",
-        "--name=DTDC_Bill_Generator",
+        "--name=Customer_Invoice_Generator",
         "--onefile",
         "--windowed",
         f"--distpath={dist_exe_dir}",
@@ -68,6 +69,8 @@ def main():
         "--clean",
         "-y"
     ]
+    if os.path.isfile(icon_path):
+        args.append(f"--icon={icon_path}")
     
     print("\nExecuting PyInstaller with args:")
     for a in args:
@@ -84,7 +87,7 @@ def main():
         print(f"PyInstaller encountered an error: {e}")
         sys.exit(1)
     
-    exe_name = "DTDC_Bill_Generator.exe" if sys.platform == "win32" or os.name == "nt" else "DTDC_Bill_Generator"
+    exe_name = "Customer_Invoice_Generator.exe" if sys.platform == "win32" or os.name == "nt" else "Customer_Invoice_Generator"
     final_path = os.path.join(dist_exe_dir, exe_name)
     if os.path.exists(final_path):
         size_mb = os.path.getsize(final_path) / (1024 * 1024)
@@ -93,7 +96,7 @@ def main():
         try:
             if os.path.exists(build_work_dir):
                 shutil.rmtree(build_work_dir, ignore_errors=True)
-            spec_file = os.path.join(base_dir, "DTDC_Bill_Generator.spec")
+            spec_file = os.path.join(base_dir, "Customer_Invoice_Generator.spec")
             if os.path.exists(spec_file):
                 os.remove(spec_file)
         except Exception:

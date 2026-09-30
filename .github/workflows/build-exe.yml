@@ -1,4 +1,4 @@
-name: Build DTDC Offline EXE
+name: Build Customer Invoice Generator Offline EXE
 on:
   push:
     branches: [ main, master ]
@@ -44,17 +44,20 @@ jobs:
       - name: Verify EXE Output
         shell: bash
         run: |
-          if [ -f "dist_exe/DTDC_Bill_Generator.exe" ]; then
+          if [ -f "dist_exe/Customer_Invoice_Generator.exe" ]; then
+            echo "Customer_Invoice_Generator.exe generated successfully!"
+            ls -lh dist_exe/Customer_Invoice_Generator.exe
+          elif [ -f "dist_exe/DTDC_Bill_Generator.exe" ]; then
             echo "DTDC_Bill_Generator.exe generated successfully!"
             ls -lh dist_exe/DTDC_Bill_Generator.exe
           else
-            echo "ERROR: dist_exe/DTDC_Bill_Generator.exe was not found"
+            echo "ERROR: Executable was not found in dist_exe/"
             ls -la dist_exe/ || true
             exit 1
           fi
 
-      - name: Upload Artifact (DTDC_Bill_Generator.exe)
+      - name: Upload Artifact (Customer_Invoice_Generator.exe)
         uses: actions/upload-artifact@v4
         with:
-          name: DTDC_Bill_Generator-Windows-EXE
-          path: dist_exe/DTDC_Bill_Generator.exe
+          name: Customer_Invoice_Generator-Windows-EXE
+          path: dist_exe/*.exe
