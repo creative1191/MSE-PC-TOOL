@@ -223,7 +223,14 @@ export const LabelPrintingManager: React.FC = () => {
       showToast('⚠️ Please upload or paste at least one label first.');
       return;
     }
-    window.print();
+    showToast('🖨️ Opening print dialog...');
+    try {
+      window.print();
+    } catch (err: any) {
+      console.warn('Direct print blocked by sandbox:', err);
+      showToast('⚠️ Print dialog blocked. Downloading multi-page PDF instead...');
+      handleExportPdf();
+    }
   };
 
   // Export to multi-page A4 PDF

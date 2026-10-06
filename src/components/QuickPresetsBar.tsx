@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package } from 'lucide-react';
+import { Package, RotateCcw, Leaf } from 'lucide-react';
 import { PresetLabel, DTDCBillData, CourierConfig } from '../types';
 
 interface QuickPresetsBarProps {
@@ -8,8 +8,9 @@ interface QuickPresetsBarProps {
   activePresetId: string;
   onApplyPreset: (preset: PresetLabel) => void;
   layoutMode: DTDCBillData['layoutMode'];
-  paperSaveMode: boolean;
+  paperSaveMode?: boolean;
   onUpdateField: (field: keyof DTDCBillData, value: any) => void;
+  onClearAll?: () => void;
 }
 
 export const QuickPresetsBar: React.FC<QuickPresetsBarProps> = React.memo(({
@@ -20,6 +21,7 @@ export const QuickPresetsBar: React.FC<QuickPresetsBarProps> = React.memo(({
   layoutMode,
   paperSaveMode,
   onUpdateField,
+  onClearAll,
 }) => {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-2.5 shadow-2xs mb-3 flex flex-wrap items-center justify-between gap-2 no-print">
@@ -72,16 +74,36 @@ export const QuickPresetsBar: React.FC<QuickPresetsBarProps> = React.memo(({
           </button>
         </div>
 
-        {layoutMode === '3_COPIES_PORTRAIT' && (
-          <label className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded border border-emerald-200 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={paperSaveMode}
-              onChange={(e) => onUpdateField('paperSaveMode', e.target.checked)}
-              className="rounded text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer"
-            />
-            <span>Paper Save Mode</span>
-          </label>
+        {/* Paper Save Mode Toggle - Always Visible */}
+        <button
+          type="button"
+          onClick={() => {
+            if (layoutMode !== '3_COPIES_PORTRAIT') {
+              onUpdateField('layoutMode', '3_COPIES_PORTRAIT');
+            }
+            onUpdateField('paperSaveMode', !paperSaveMode);
+          }}
+          className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-md border transition-all cursor-pointer shadow-2xs ${
+            paperSaveMode && layoutMode === '3_COPIES_PORTRAIT'
+              ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 ring-2 ring-emerald-300'
+              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-300'
+          }`}
+          title="Print only top copy and leave bottom copies blank to save paper"
+        >
+          <Leaf className={`w-3.5 h-3.5 ${paperSaveMode && layoutMode === '3_COPIES_PORTRAIT' ? 'text-white' : 'text-emerald-600'}`} />
+          <span>Paper Save: {paperSaveMode && layoutMode === '3_COPIES_PORTRAIT' ? 'ON (1 Copy)' : 'OFF'}</span>
+        </button>
+
+        {onClearAll && (
+          <button
+            type="button"
+            onClick={onClearAll}
+            className="flex items-center gap-1 text-xs bg-red-50 hover:bg-red-100 text-red-700 font-bold px-3 py-1.5 rounded-md border border-red-300 cursor-pointer transition-colors shadow-2xs"
+            title="Clear all fields in the entire invoice"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Clear All Data</span>
+          </button>
         )}
       </div>
     </div>

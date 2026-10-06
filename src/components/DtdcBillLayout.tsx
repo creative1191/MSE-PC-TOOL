@@ -28,35 +28,44 @@ export const DtdcBillLayout: React.FC<DtdcBillLayoutProps> = ({
   isLandscapeFull = false,
   customLogoUrl,
 }) => {
-  // If in Paper Save Mode, render COMPLETELY BLANK space (no text, no borders, no watermark)
+  // If in Paper Save Mode, render blank space on print, but on screen show gentle helper indicator
   if (isBlank) {
-    return <div className="w-full h-[85mm] bg-transparent" />;
+    return (
+      <div className="w-full min-h-[80mm] max-h-[86mm] border-2 border-dashed border-emerald-300 bg-emerald-50/30 rounded flex flex-col items-center justify-center p-4 text-center print:border-none print:bg-transparent print:h-[85mm]">
+        <span className="text-emerald-800 font-bold text-xs flex items-center gap-1.5 print:hidden">
+          🌱 Paper Save Mode Active ({copyTitle})
+        </span>
+        <span className="text-emerald-600 text-[11px] mt-1 print:hidden">
+          This area is left blank on the printed page to save paper. Only the top Sender's Copy will print.
+        </span>
+      </div>
+    );
   }
 
   const courierType = data.courier || 'DTDC';
   const courierConfig = COURIER_CONFIGS[courierType] || COURIER_CONFIGS.DTDC;
-  const heightClass = isLandscapeFull ? 'min-h-[175mm]' : 'h-[85mm] min-h-[82mm] max-h-[85mm]';
+  const heightClass = isLandscapeFull ? 'min-h-[175mm]' : 'min-h-[80mm] max-h-[86mm]';
 
   return (
     <div
-      className={`invoice-card w-full ${heightClass} border-[1.5px] border-black border-solid bg-white text-black flex flex-col justify-between box-border overflow-hidden select-text`}
+      className={`invoice-card w-full ${heightClass} border-[1.5px] border-black border-solid bg-white text-black flex flex-col justify-between box-border select-text`}
       style={{ fontFamily: 'Segoe UI, Arial, Helvetica, sans-serif' }}
     >
       {/* ================= 1. HEADER ROW ================= */}
       <div className="grid grid-cols-12 border-b-[1.5px] border-black items-stretch">
         {/* Top Left: Logo & Registered Office Address (~42% width) */}
-        <div className="col-span-5 flex items-center gap-2 p-1.5 border-r-[1.5px] border-black">
-          <div className="shrink-0 flex items-center justify-center max-w-[135px] sm:max-w-[150px]">
+        <div className="col-span-5 flex items-center gap-2 p-1 sm:p-1.5 border-r-[1.5px] border-black">
+          <div className="shrink-0 flex items-center justify-center max-w-[130px] sm:max-w-[145px]">
             <CourierLogo
               courier={courierType}
               customLogoUrl={customLogoUrl}
-              className={isLandscapeFull ? 'h-9 w-auto max-w-[165px]' : 'h-7 sm:h-7.5 w-auto max-w-[140px]'}
+              className={isLandscapeFull ? 'h-9 w-auto max-w-[165px]' : 'h-6 sm:h-7 w-auto max-w-[135px]'}
             />
           </div>
           <div className="leading-tight text-black min-w-0 flex-1">
-            <div className="font-bold text-[9px] tracking-tight truncate">{courierConfig.fullName}</div>
-            <div className="text-[7.5px] text-gray-800 leading-tight">{courierConfig.regdOfficeLine1}</div>
-            <div className="text-[7.5px] text-gray-800 leading-tight">{courierConfig.regdOfficeLine2}</div>
+            <div className="font-bold text-[8.5px] tracking-tight truncate">{courierConfig.fullName}</div>
+            <div className="text-[7px] text-gray-800 leading-tight truncate">{courierConfig.regdOfficeLine1}</div>
+            <div className="text-[7px] text-gray-800 leading-tight truncate">{courierConfig.regdOfficeLine2}</div>
           </div>
         </div>
 
@@ -64,24 +73,24 @@ export const DtdcBillLayout: React.FC<DtdcBillLayoutProps> = ({
         <div className="col-span-7 grid grid-cols-2">
           {/* Origin & Product column */}
           <div className="flex flex-col justify-between border-r-[1.5px] border-black">
-            <div className="border-b-[1.5px] border-black text-center py-0.5 text-[9px]">
-              Origin: <span className="font-bold uppercase">{data.origin || 'SATNA'}</span>
+            <div className="border-b-[1.5px] border-black text-center py-0.5 text-[8.5px]">
+              Origin: <span className="font-bold uppercase">{data.origin || ''}</span>
             </div>
-            <div className="flex-1 flex items-center justify-center p-1 font-bold text-[10px] tracking-wide text-center uppercase">
+            <div className="flex-1 flex items-center justify-center p-0.5 font-bold text-[9.5px] tracking-wide text-center uppercase">
               PRODUCT: {data.product || courierConfig.defaultProducts[0]}
             </div>
           </div>
 
           {/* Dest, Type & Date column */}
           <div className="flex flex-col justify-between text-center">
-            <div className="border-b-[1.5px] border-black py-0.5 text-[9px]">
-              Dest: <span className="font-bold uppercase">{data.dest || 'MEHSANA'}</span>
+            <div className="border-b-[1.5px] border-black py-0.5 text-[8.5px]">
+              Dest: <span className="font-bold uppercase">{data.dest || ''}</span>
             </div>
-            <div className="border-b-[1.5px] border-black py-0.5 text-[9px]">
-              Type: <span className="font-bold uppercase">{data.type || 'NON-DOCUMENT'}</span>
+            <div className="border-b-[1.5px] border-black py-0.5 text-[8.5px]">
+              Type: <span className="font-bold uppercase">{data.type || ''}</span>
             </div>
-            <div className="py-0.5 text-[8.5px] text-gray-800">
-              Date: <span className="font-normal">{data.date || 'Sun Sep 20 2026'}</span>
+            <div className="py-0.5 text-[8px] text-gray-800">
+              Date: <span className="font-normal">{data.date || ''}</span>
             </div>
           </div>
         </div>
@@ -90,46 +99,48 @@ export const DtdcBillLayout: React.FC<DtdcBillLayoutProps> = ({
       {/* ================= 2. CONSIGNOR & CONSIGNEE DETAILS ================= */}
       <div className="grid grid-cols-2 border-b-[1.5px] border-black items-stretch">
         {/* Consignor (Left) */}
-        <div className="p-1.5 border-r-[1.5px] border-black text-[8.5px] leading-[1.3] text-black">
+        <div className="p-1 sm:p-1.5 border-r-[1.5px] border-black text-[8px] leading-[1.2] text-black">
           <div>
-            Consignor's Name: <span className="font-bold">{data.consignorName || 'Dharmendra kumar kushwaha'}</span>
+            Consignor's Name: <span className="font-bold">{data.consignorName || ''}</span>
           </div>
-          <div className="mt-0.5">
-            Consignor's Address: <span className="font-bold">{data.consignorAddress || 'Ghatehkala post rahikwara nagod, distt satna madhyapradesh 485446'}</span>
+          <div className="mt-0.5 break-words">
+            Consignor's Address: <span className="font-bold">{data.consignorAddress || ''}</span>
           </div>
           <div className="mt-0.5">
             GSTIN No.: <span>{data.consignorGstin || ''}</span>
           </div>
-          <div className="mt-0.5 flex gap-4">
-            <span>Phone: <span className="font-bold font-mono">{data.consignorPhone || '0000000000'}</span></span>
-            <span>Email : <span>{data.consignorEmail || ''}</span></span>
+          <div className="mt-0.5 flex gap-3">
+            <span>Phone: <span className="font-bold font-mono">{data.consignorPhone || ''}</span></span>
+            {data.consignorEmail && <span>Email: <span>{data.consignorEmail}</span></span>}
           </div>
         </div>
 
         {/* Consignee (Right) */}
-        <div className="p-1.5 flex flex-col justify-between text-[8.5px] leading-[1.3] text-black">
+        <div className="p-1 sm:p-1.5 flex flex-col justify-between text-[8px] leading-[1.2] text-black">
           <div>
-            <div>
-              Customer Ref No: <span>{data.customerRefNo || ''}</span>
+            {data.customerRefNo && (
+              <div>
+                Customer Ref No: <span>{data.customerRefNo}</span>
+              </div>
+            )}
+            <div className={data.customerRefNo ? 'mt-0.5' : ''}>
+              Consignee's Name: <span className="font-bold">{data.consigneeName || ''}</span>
             </div>
-            <div className="mt-0.5">
-              Consignee's Name: <span className="font-bold">{data.consigneeName || 'Mantra softech india pvt ltd'}</span>
-            </div>
-            <div className="mt-0.5">
-              Consignee's Address: <span className="font-bold">{data.consigneeAddress || 'LS no 2376/1A, 13501, near rainbow company jhulasan road, village rajpur, taluka kadi, mahesana, MEHSANA, GUJARAT, 384440'}</span>
+            <div className="mt-0.5 break-words">
+              Consignee's Address: <span className="font-bold">{data.consigneeAddress || ''}</span>
             </div>
             <div className="mt-0.5">
               GSTIN No.: <span>{data.consigneeGstin || ''}</span>
             </div>
-            <div className="mt-0.5 flex gap-4">
-              <span>Phone: <span className="font-bold font-mono">{data.consigneePhone || '0000000000'}</span></span>
-              <span>Email : <span>{data.consigneeEmail || ''}</span></span>
+            <div className="mt-0.5 flex gap-3">
+              <span>Phone: <span className="font-bold font-mono">{data.consigneePhone || ''}</span></span>
+              {data.consigneeEmail && <span>Email: <span>{data.consigneeEmail}</span></span>}
             </div>
           </div>
 
-          {/* Courier Charges Box (User rule: amount by default decimal ke baad double zero rhega) */}
-          <div className="mt-1">
-            <div className="border-[1.5px] border-black px-2.5 py-0.5 inline-block font-bold text-[10.5px]">
+          {/* Courier Charges Box */}
+          <div className="mt-0.5">
+            <div className="border-[1.5px] border-black px-2 py-0.5 inline-block font-bold text-[10px]">
               Courier Charges: ₹ {formatAmount(data.courierCharges)}
             </div>
           </div>
@@ -141,7 +152,7 @@ export const DtdcBillLayout: React.FC<DtdcBillLayoutProps> = ({
         {/* Column 1: Content Spec, Paperwork & Declaration (~33% width) */}
         <div className="col-span-4 border-r-[1.5px] border-black flex flex-col justify-between">
           <div className="p-1 border-b-[1.5px] border-black text-[8.5px]">
-            Content Specification : <span className="font-bold">{data.contentSpec || 'ELECTRIC ITEMS'}</span>
+            Content Specification : <span className="font-bold">{data.contentSpec || ''}</span>
           </div>
           <div className="p-1 border-b-[1.5px] border-black text-[8px]">
             Paperwork Enclosed : <span>{data.paperworkEnclosed || ''}</span>
@@ -170,34 +181,34 @@ export const DtdcBillLayout: React.FC<DtdcBillLayoutProps> = ({
         {/* Column 2: Weights, Pieces, Dimensions & Depot Address (~27% width) */}
         <div className="col-span-3 border-r-[1.5px] border-black flex flex-col text-[8px]">
           <div className="p-0.5 px-1 border-b-[1.5px] border-black">
-            Declared Value: <span className="font-bold">{data.declaredValue || '1500'}</span>
+            Declared Value: <span className="font-bold">{data.declaredValue || ''}</span>
           </div>
           <div className="p-0.5 px-1 border-b-[1.5px] border-black">
-            No Of Pieces: <span className="font-bold">{data.pieces || '1'}</span>
+            No Of Pieces: <span className="font-bold">{data.pieces || ''}</span>
           </div>
           <div className="p-0.5 px-1 border-b-[1.5px] border-black">
-            Actual Weight: <span className="font-bold">{data.actualWeight || '0.23 Kgs'}</span>
+            Actual Weight: <span className="font-bold">{data.actualWeight || ''}</span>
           </div>
           <div className="p-0.5 px-1 border-b-[1.5px] border-black">
             Ewaybill Number: <span className="font-mono">{data.ewaybillNumber || ''}</span>
           </div>
           <div className="p-0.5 px-1 border-b-[1.5px] border-black">
-            Dim: <span className="font-bold">{data.dim || '10 cm X 10 cm X 10 cm'}</span>
+            Dim: <span className="font-bold">{data.dim || ''}</span>
           </div>
           <div className="p-0.5 px-1 border-b-[1.5px] border-black">
-            Charged weight: <span className="font-bold">{data.chargedWeight || '0.23 Kgs'}</span>
+            Charged weight: <span className="font-bold">{data.chargedWeight || ''}</span>
           </div>
 
           {/* Booking Center / Branch details */}
           <div className="p-1 text-[7px] leading-tight flex-1">
             <div>
-              Name : <span className="font-bold uppercase">{data.bookingBranchName || 'MAA SHARDA ENTERPRISES'}</span>
+              Name : <span className="font-bold uppercase">{data.bookingBranchName || ''}</span>
             </div>
             <div className="mt-0.5">
-              Address: <span className="font-bold uppercase">{data.bookingBranchAddress || 'NEAR REST HOUSE, NAGOD, SATNA, MADHYA PRADESH 485446'}</span>
+              Address: <span className="font-bold uppercase">{data.bookingBranchAddress || ''}</span>
             </div>
             <div className="mt-0.5">
-              Phone : <span className="font-bold font-mono">{data.bookingBranchPhone || '8982091190'}</span>
+              Phone : <span className="font-bold font-mono">{data.bookingBranchPhone || ''}</span>
             </div>
           </div>
         </div>
@@ -252,9 +263,9 @@ export const DtdcBillLayout: React.FC<DtdcBillLayoutProps> = ({
       </div>
 
       {/* ================= 4. FOOTER BAR ================= */}
-      <div className="px-1.5 py-0.5 flex items-center justify-between text-[7.5px] font-bold tracking-tight">
-        <span>{courierConfig.footerNotice}</span>
-        <span>{copyTitle}</span>
+      <div className="px-1.5 py-0.5 flex items-center justify-between text-[7px] font-bold tracking-tight">
+        <span className="truncate pr-2">{courierConfig.footerNotice}</span>
+        <span className="shrink-0 uppercase font-mono text-black">{copyTitle}</span>
       </div>
     </div>
   );

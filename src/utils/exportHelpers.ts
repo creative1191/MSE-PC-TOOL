@@ -1,11 +1,42 @@
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
 import { DTDCBillData } from '../types';
 import { formatAmount } from '../components/DtdcBillLayout';
 import { COURIER_CONFIGS } from '../data/courierConfigs';
 
 /**
- * Downloads a high-resolution PNG of the courier bill.
+ * Captures the live visible print sheet element directly at high resolution (pixelRatio: 2.5).
+ * Enforces standard A4 pixel bounds (794px for portrait, 1123px for landscape) so elements
+ * inside scrollable preview containers are NEVER clipped or truncated on the right edge.
+ */
+async function captureLiveElement(
+  element: HTMLElement,
+  isLandscape: boolean = false,
+  isHighRes: boolean = true
+): Promise<string> {
+  const pixelRatio = isHighRes ? 2.5 : 1.8;
+  const targetWidth = isLandscape ? 1123 : 794;
+  const targetHeight = Math.max(element.scrollHeight, element.offsetHeight, isLandscape ? 794 : 1123);
+
+  return await toPng(element, {
+    width: targetWidth,
+    height: targetHeight,
+    pixelRatio,
+    backgroundColor: '#ffffff',
+    skipFonts: true,
+    cacheBust: false,
+    style: {
+      width: `${targetWidth}px`,
+      minWidth: `${targetWidth}px`,
+      maxWidth: `${targetWidth}px`,
+      margin: '0',
+    },
+    filter: (node: any) => !node?.classList?.contains?.('no-print'),
+  });
+}
+
+/**
+ * Downloads a high-resolution PNG of the exact courier bill.
  */
 export async function downloadBillAsPng(
   element: HTMLElement,
@@ -15,14 +46,7 @@ export async function downloadBillAsPng(
   try {
     const courier = data.courier || 'DTDC';
     const config = COURIER_CONFIGS[courier] || COURIER_CONFIGS.DTDC;
-    const scale = isHighRes ? 3 : 2; // 3x = ~300 DPI
-    const canvas = await html2canvas(element, {
-      scale,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-    });
+    const isLandscape = data.layoutMode === 'SINGLE_LANDSCAPE';
 
     const safeName = (data.consignorName || config.shortName)
       .replace(/[^a-zA-Z0-9]/g, '_')
@@ -30,11 +54,13 @@ export async function downloadBillAsPng(
     const dest = (data.dest || 'SHIP').replace(/[^a-zA-Z0-9]/g, '');
     const filename = `${config.shortName}_${safeName}_${data.courierCharges || 0}rs_${dest}_${isHighRes ? 'HighRes' : 'Std'}.png`;
 
-    const image = canvas.toDataURL('image/png');
+    const imgData = await captureLiveElement(element, isLandscape, isHighRes);
     const link = document.createElement('a');
-    link.href = image;
+    link.href = imgData;
     link.download = filename;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
     return true;
   } catch (err) {
     console.error('Failed to export PNG:', err);
@@ -43,60 +69,58 @@ export async function downloadBillAsPng(
 }
 
 /**
- * Downloads a vector / pixel-perfect PDF of the courier bill (A4 Portrait or Landscape).
+ * Downloads an exact pixel-perfect PDF of the live courier bill sheet (A4 Portrait 3-copies or Landscape).
+ * Renders the exact same layout (3 stacked copies with barcodes, official headers, cut lines) at 300 DPI.
+ * Applies a 6mm safe page margin so the receipt NEVER touches or exceeds the page borders.
  */
 export async function downloadBillAsPdf(element: HTMLElement, data: DTDCBillData) {
-  try {
-    const courier = data.courier || 'DTDC';
-    const config = COURIER_CONFIGS[courier] || COURIER_CONFIGS.DTDC;
-    const isLandscape = data.layoutMode === 'SINGLE_LANDSCAPE';
-    const canvas = await html2canvas(element, {
-      scale: 2.5,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-    });
+  const courier = data.courier || 'DTDC';
+  const config = COURIER_CONFIGS[courier] || COURIER_CONFIGS.DTDC;
+  const isLandscape = data.layoutMode === 'SINGLE_LANDSCAPE';
 
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF({
-      orientation: isLandscape ? 'landscape' : 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
+  const safeName = (data.consignorName || config.shortName)
+    .replace(/[^a-zA-Z0-9]/g, '_')
+    .substring(0, 20);
+  const dest = (data.dest || 'SHIP').replace(/[^a-zA-Z0-9]/g, '');
+  const suffix = data.layoutMode === '3_COPIES_PORTRAIT' ? '_3Copies' : '';
+  const filename = `${config.shortName}_${safeName}_${data.courierCharges || 0}rs_${dest}${suffix}.pdf`;
 
-    const pdfWidth = isLandscape ? 297 : 210;
-    const pdfHeight = isLandscape ? 210 : 297;
+  // 1. Capture the live print sheet directly with full A4 canvas width
+  const imgData = await captureLiveElement(element, isLandscape, true);
 
-    // Calculate fitted dimensions with balanced margins
-    const imgProps = pdf.getImageProperties(imgData);
-    const ratio = imgProps.width / imgProps.height;
-    let renderW = pdfWidth - 16;
-    let renderH = renderW / ratio;
+  // 2. Build standard A4 PDF
+  const pdf = new jsPDF({
+    orientation: isLandscape ? 'landscape' : 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
 
-    if (renderH > pdfHeight - 18) {
-      renderH = pdfHeight - 18;
-      renderW = renderH * ratio;
-    }
+  const pdfWidth = isLandscape ? 297 : 210;
+  const pdfHeight = isLandscape ? 210 : 297;
 
-    const posX = (pdfWidth - renderW) / 2;
-    const posY = (pdfHeight - renderH) / 2;
+  // Safe 6mm margins around the A4 page so receipt borders NEVER clip or touch the paper edge
+  const marginX = 6;
+  const marginY = 6;
+  const maxW = pdfWidth - (marginX * 2);
+  const maxH = pdfHeight - (marginY * 2);
 
-    pdf.addImage(imgData, 'PNG', posX, posY, renderW, renderH);
+  const imgProps = pdf.getImageProperties(imgData);
+  const ratio = imgProps.width / imgProps.height;
+  
+  let renderW = maxW;
+  let renderH = renderW / ratio;
 
-    const safeName = (data.consignorName || config.shortName)
-      .replace(/[^a-zA-Z0-9]/g, '_')
-      .substring(0, 20);
-    const dest = (data.dest || 'SHIP').replace(/[^a-zA-Z0-9]/g, '');
-    const suffix = data.layoutMode === '3_COPIES_PORTRAIT' ? '_3Copies' : '';
-    const filename = `${config.shortName}_${safeName}_${data.courierCharges || 0}rs_${dest}${suffix}.pdf`;
-
-    pdf.save(filename);
-    return true;
-  } catch (err) {
-    console.error('Failed to export PDF:', err);
-    throw err;
+  if (renderH > maxH) {
+    renderH = maxH;
+    renderW = renderH * ratio;
   }
+
+  const posX = (pdfWidth - renderW) / 2;
+  const posY = data.paperSaveMode ? marginY : (pdfHeight - renderH) / 2;
+
+  pdf.addImage(imgData, 'PNG', posX, posY, renderW, renderH, undefined, 'FAST');
+  pdf.save(filename);
+  return true;
 }
 
 /**
@@ -158,12 +182,6 @@ export function downloadBillAsHtml(data: DTDCBillData) {
       <div class="charges-box">
         Courier Charges: ₹ ${formatAmount(data.courierCharges)}
       </div>
-      <div>
-        Risk Surcharge: [${data.riskSurchargeOwner ? '✓' : ' '}] Owner's Risk [${data.riskSurchargeCarrier ? '✓' : ' '}] Carrier's Risk
-      </div>
-    </div>
-    <div style="margin-top:10px; font-size:11px; text-align:center; color:#555;">
-      ${config.footerNotice}
     </div>
   </div>
 </body>
@@ -173,7 +191,9 @@ export function downloadBillAsHtml(data: DTDCBillData) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${config.shortName}_${data.awb}_${data.dest}.html`;
+  link.download = `${config.shortName}_${data.awb}_Bill.html`;
+  document.body.appendChild(link);
   link.click();
+  document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }

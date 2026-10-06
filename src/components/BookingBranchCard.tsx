@@ -26,8 +26,8 @@ export const BookingBranchCard: React.FC<BookingBranchCardProps> = React.memo(({
             type="text"
             value={billData.bookingBranchName || ''}
             onChange={(e) => onUpdateField('bookingBranchName', e.target.value)}
-            className="w-full border border-gray-300 rounded px-2 py-1 font-semibold text-[11px]"
-            placeholder="MAA SHARDA ENTERPRISES"
+            className="w-full border border-gray-300 rounded px-2 py-1 font-semibold text-[11px] placeholder:text-gray-400 placeholder:font-normal"
+            placeholder="Booking Branch Name"
           />
         </div>
         <div>
@@ -38,8 +38,8 @@ export const BookingBranchCard: React.FC<BookingBranchCardProps> = React.memo(({
             type="text"
             value={billData.bookingBranchPhone || ''}
             onChange={(e) => onUpdateField('bookingBranchPhone', e.target.value)}
-            className="w-full border border-gray-300 rounded px-2 py-1 font-mono text-[11px]"
-            placeholder="8982091190"
+            className="w-full border border-gray-300 rounded px-2 py-1 font-mono text-[11px] placeholder:text-gray-400 placeholder:font-normal"
+            placeholder="Branch Contact Number"
           />
         </div>
       </div>
@@ -52,8 +52,8 @@ export const BookingBranchCard: React.FC<BookingBranchCardProps> = React.memo(({
           type="text"
           value={billData.bookingBranchAddress || ''}
           onChange={(e) => onUpdateField('bookingBranchAddress', e.target.value)}
-          className="w-full border border-gray-300 rounded px-2 py-1 text-[11px]"
-          placeholder="NEAR REST HOUSE, NAGOD, SATNA, MADHYA PRADESH 485446"
+          className="w-full border border-gray-300 rounded px-2 py-1 text-[11px] placeholder:text-gray-400 placeholder:font-normal"
+          placeholder="Branch Address with PIN"
         />
       </div>
 

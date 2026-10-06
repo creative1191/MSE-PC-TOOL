@@ -1,5 +1,5 @@
 import React from 'react';
-import { Printer, FileDown, Image as ImageIcon, FileText } from 'lucide-react';
+import { Printer, FileDown, Image as ImageIcon, FileText, Leaf } from 'lucide-react';
 import { DTDCBillData, CourierConfig } from '../types';
 
 interface BillExportBarProps {
@@ -80,6 +80,23 @@ export const BillExportBar: React.FC<BillExportBarProps> = React.memo(({
               Compact (5mm)
             </button>
           </div>
+        )}
+
+        {/* Paper Save Mode Toggle */}
+        {onUpdateField && (
+          <button
+            type="button"
+            onClick={() => onUpdateField('paperSaveMode', !billData.paperSaveMode)}
+            className={`flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-md border transition-all cursor-pointer shadow-2xs ${
+              billData.paperSaveMode
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 ring-2 ring-emerald-300'
+                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-300'
+            }`}
+            title="When active, only the top copy is printed and the bottom two copies remain blank to save paper"
+          >
+            <Leaf className={`w-3.5 h-3.5 ${billData.paperSaveMode ? 'text-white' : 'text-emerald-600'}`} />
+            <span>Paper Save Mode: {billData.paperSaveMode ? 'ON (1 Copy)' : 'OFF (3 Copies)'}</span>
+          </button>
         )}
       </div>
 

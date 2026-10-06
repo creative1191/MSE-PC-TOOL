@@ -22,6 +22,56 @@ interface SnipToolHandlerProps {
   onSelectCourier?: (courier: CourierType) => void;
 }
 
+// Helper to safely merge OCR results without wiping out non-empty values
+function mergeOcrResults(local: OCRMatchResult, ai: OCRMatchResult): OCRMatchResult {
+  const isMeaningful = (val: any) =>
+    val !== undefined && val !== null && String(val).trim() !== '' && String(val).trim() !== '0000000000';
+
+  const cleanAiAddr = cleanAddressString(
+    (isMeaningful(ai.consigneeAddress) ? ai.consigneeAddress : local.consigneeAddress) || '',
+    ai.consigneeName || local.consigneeName
+  );
+
+  return {
+    rawText: local.rawText || ai.rawText,
+    detectedCourier: ai.detectedCourier || local.detectedCourier,
+    awb: isMeaningful(local.awb) ? local.awb : ai.awb,
+    origin: isMeaningful(local.origin) ? local.origin : ai.origin,
+    dest: isMeaningful(local.dest) ? local.dest : ai.dest,
+    product: isMeaningful(local.product) ? local.product : ai.product,
+    type: isMeaningful(local.type) ? local.type : ai.type,
+    mode: isMeaningful(local.mode) ? local.mode : ai.mode,
+    date: isMeaningful(local.date) ? local.date : ai.date,
+    consigneeName: isMeaningful(local.consigneeName) ? local.consigneeName : ai.consigneeName,
+    consigneeAddress: cleanAiAddr || local.consigneeAddress,
+    consigneePhone: isMeaningful(local.consigneePhone)
+      ? local.consigneePhone
+      : isMeaningful(ai.consigneePhone)
+      ? ai.consigneePhone
+      : '',
+    customerRefNo: isMeaningful(local.customerRefNo) ? local.customerRefNo : ai.customerRefNo,
+    consigneeGstin: isMeaningful(local.consigneeGstin) ? local.consigneeGstin : ai.consigneeGstin,
+    consignorName: isMeaningful(local.consignorName) ? local.consignorName : ai.consignorName,
+    consignorAddress: isMeaningful(local.consignorAddress) ? local.consignorAddress : ai.consignorAddress,
+    consignorPhone: isMeaningful(local.consignorPhone)
+      ? local.consignorPhone
+      : isMeaningful(ai.consignorPhone)
+      ? ai.consignorPhone
+      : '',
+    consignorGstin: isMeaningful(local.consignorGstin) ? local.consignorGstin : ai.consignorGstin,
+    // Content spec must be guaranteed non-empty
+    contentSpec:
+      (isMeaningful(local.contentSpec) ? local.contentSpec : isMeaningful(ai.contentSpec) ? ai.contentSpec : '') ||
+      (local.type === 'DOCUMENT' || ai.type === 'DOCUMENT' ? 'DOCUMENTS' : 'ELECTRIC ITEMS'),
+    declaredValue: isMeaningful(local.declaredValue) ? local.declaredValue : ai.declaredValue,
+    pieces: isMeaningful(local.pieces) ? local.pieces : isMeaningful(ai.pieces) ? ai.pieces : '1',
+    actualWeight: isMeaningful(local.actualWeight) ? local.actualWeight : isMeaningful(ai.actualWeight) ? ai.actualWeight : '',
+    chargedWeight: isMeaningful(local.chargedWeight) ? local.chargedWeight : isMeaningful(ai.chargedWeight) ? ai.chargedWeight : '',
+    dim: isMeaningful(local.dim) ? local.dim : ai.dim,
+    courierCharges: typeof local.courierCharges === 'number' ? local.courierCharges : ai.courierCharges,
+  };
+}
+
 export const SnipToolHandler: React.FC<SnipToolHandlerProps> = ({
   onDataExtracted,
   onClearOldData,
@@ -118,24 +168,15 @@ export const SnipToolHandler: React.FC<SnipToolHandlerProps> = ({
             const json = await res.json();
             if (json.success && json.data) {
               const aiData: OCRMatchResult = json.data;
-              const cleanAiAddr = cleanAddressString(aiData.consigneeAddress || extractedData.consigneeAddress, aiData.consigneeName || extractedData.consigneeName);
-              const merged: OCRMatchResult = {
-                ...extractedData,
-                ...aiData,
-                // Preserve non-empty fields
-                awb: aiData.awb || extractedData.awb,
-                consigneeName: aiData.consigneeName || extractedData.consigneeName,
-                consigneeAddress: cleanAiAddr,
-                consignorName: aiData.consignorName || extractedData.consignorName,
-              };
+              const merged = mergeOcrResults(extractedData, aiData);
 
-              if (aiData.detectedCourier && aiData.detectedCourier !== currentCourier) {
-                setDetectedCourierBadge(aiData.detectedCourier);
+              if (merged.detectedCourier && merged.detectedCourier !== currentCourier) {
+                setDetectedCourierBadge(merged.detectedCourier);
               }
 
               const finalAwb = merged.awb || localParsed.awb || 'Detected';
               setNewAwbDetected(finalAwb);
-              setOcrStatus(`✅ AI + PDF Success: Extracted ${finalAwb}`);
+              setOcrStatus(`✅ PDF + OCR Success: Extracted ${finalAwb}`);
               onDataExtracted(merged, finalAwb);
             }
           }
@@ -187,6 +228,13 @@ export const SnipToolHandler: React.FC<SnipToolHandlerProps> = ({
               if (d.detectedCourier && d.detectedCourier !== currentCourier) {
                 setDetectedCourierBadge(d.detectedCourier);
               }
+
+              // Guarantee contentSpec is never empty
+              if (!d.contentSpec || d.contentSpec.trim() === '' || d.contentSpec.toUpperCase().includes('NOT APPLICABLE')) {
+                d.contentSpec = d.type === 'DOCUMENT' ? 'DOCUMENTS' : 'ELECTRIC ITEMS';
+              }
+              if (d.consignorPhone === '0000000000') d.consignorPhone = '';
+              if (d.consigneePhone === '0000000000') d.consigneePhone = '';
 
               setNewAwbDetected(d.awb || 'Detected');
               setOcrStatus(`✅ AI OCR Success: Extracted ${d.awb || 'Tracking'}`);

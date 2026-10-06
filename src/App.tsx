@@ -51,23 +51,6 @@ export default function App() {
     return 'dtdc-generator';
   }, [activeTab, selectedCourier]);
 
-  // Direct print handler: triggers native print dialog directly on Page 1 without phantom blank page
-  const handleDirectPrint = useCallback(() => {
-    window.print();
-  }, []);
-
-  // Keyboard shortcut Ctrl+P for direct printing
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
-        e.preventDefault();
-        handleDirectPrint();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleDirectPrint]);
-
   // Switch courier tab handler
   const handleSwitchCourier = useCallback((courier: CourierType) => {
     setSelectedCourier(courier);
@@ -148,18 +131,27 @@ export default function App() {
         // STRICT RECIPIENT / DESTINATION MAPPING
         consigneeName: targetConsigneeName,
         consigneeAddress: cleanConsigneeAddr,
-        consigneePhone: extracted.consigneePhone || prev.consigneePhone,
+        consigneePhone:
+          extracted.consigneePhone && extracted.consigneePhone !== '0000000000'
+            ? extracted.consigneePhone
+            : prev.consigneePhone,
         customerRefNo: extracted.customerRefNo || prev.customerRefNo,
         consigneeGstin: extracted.consigneeGstin || prev.consigneeGstin,
         // CONSIGNOR DETAILS
         consignorName: extracted.consignorName || prev.consignorName,
         consignorAddress: extracted.consignorAddress || prev.consignorAddress,
-        consignorPhone: extracted.consignorPhone || prev.consignorPhone,
+        consignorPhone:
+          extracted.consignorPhone && extracted.consignorPhone !== '0000000000'
+            ? extracted.consignorPhone
+            : prev.consignorPhone,
         consignorGstin: extracted.consignorGstin || prev.consignorGstin,
         // SHIPMENT SPECS
-        contentSpec: extracted.contentSpec || prev.contentSpec || (extracted.type === 'DOCUMENT' ? 'DOCUMENTS' : 'ELECTRIC ITEMS'),
-        declaredValue: extracted.declaredValue || prev.declaredValue,
-        pieces: extracted.pieces || prev.pieces,
+        contentSpec:
+          extracted.contentSpec && !extracted.contentSpec.toUpperCase().includes('NOT APPLICABLE')
+            ? extracted.contentSpec
+            : (extracted.type === 'DOCUMENT' ? 'DOCUMENTS' : (prev.contentSpec || 'ELECTRIC ITEMS')),
+        declaredValue: extracted.declaredValue || prev.declaredValue || 'Not Applicable',
+        pieces: extracted.pieces || prev.pieces || '1',
         actualWeight: extracted.actualWeight || prev.actualWeight,
         chargedWeight: extracted.chargedWeight || prev.chargedWeight,
         dim: extracted.dim || prev.dim,
@@ -168,8 +160,9 @@ export default function App() {
     });
   }, [selectedCourier, handleSwitchCourier]);
 
-  // Clear old data button logic
+  // Clear old data button logic - Thoroughly clears ALL fields across consignor, consignee, shipment & branch
   const handleClearOldData = useCallback(() => {
+    setActivePresetId('');
     setBillData((prev) => ({
       ...prev,
       courier: selectedCourier,
@@ -180,17 +173,34 @@ export default function App() {
       consigneePhone: '',
       consigneeGstin: '',
       consigneeEmail: '',
-      origin: 'SATNA',
+      consignorName: '',
+      consignorAddress: '',
+      consignorPhone: '',
+      consignorGstin: '',
+      consignorEmail: '',
+      senderDepot: '',
+      origin: '',
       dest: '',
-      contentSpec: 'ELECTRIC ITEMS',
+      courierCharges: '',
+      contentSpec: '',
       paperworkEnclosed: '',
-      declaredValue: 'Not Applicable',
+      declaredValue: '',
+      pieces: '',
       actualWeight: '',
       chargedWeight: '',
-      dim: '10 cm X 10 cm X 10 cm',
+      dim: '',
       ewaybillNumber: '',
       remark: '',
+      bookingBranchName: '',
+      bookingBranchAddress: '',
+      bookingBranchPhone: '',
+      riskSurchargeOwner: false,
+      riskSurchargeCarrier: false,
     }));
+    setExportNotice('✓ All fields cleared successfully! You can paste new data or type directly.');
+    setTimeout(() => {
+      setExportNotice(null);
+    }, 3500);
   }, [selectedCourier]);
 
   // Preset selector
@@ -237,8 +247,10 @@ export default function App() {
       await downloadBillAsPdf(printAreaRef.current, billData);
       setExportNotice('✅ PDF Downloaded Successfully!');
       setTimeout(() => setExportNotice(null), 3000);
-    } catch {
-      setExportNotice('Error generating PDF');
+    } catch (err: any) {
+      console.error('PDF export error:', err);
+      setExportNotice('❌ PDF Generation Failed. Try Print (Ctrl+P) to Save as PDF.');
+      setTimeout(() => setExportNotice(null), 4000);
     } finally {
       setIsExporting(false);
     }
@@ -249,6 +261,32 @@ export default function App() {
     setExportNotice('✅ HTML File Downloaded!');
     setTimeout(() => setExportNotice(null), 3000);
   }, [billData]);
+
+  // Robust Direct Print handler: opens native print dialog with immediate feedback and PDF fallback
+  const handleDirectPrint = useCallback(() => {
+    setExportNotice('🖨️ Opening print dialog...');
+    try {
+      window.print();
+      setExportNotice('🖨️ Print command sent! (Tip: Green "PDF" button is also available for direct file download)');
+      setTimeout(() => setExportNotice(null), 5000);
+    } catch (err: any) {
+      console.warn('Direct print blocked or failed, downloading PDF fallback:', err);
+      setExportNotice('⚠️ Browser blocked direct print popup. Downloading Print-Ready PDF instead...');
+      handleExportPdf();
+    }
+  }, [handleExportPdf]);
+
+  // Keyboard shortcut Ctrl+P for direct printing
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        handleDirectPrint();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleDirectPrint]);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col antialiased">
@@ -284,6 +322,7 @@ export default function App() {
               layoutMode={billData.layoutMode}
               paperSaveMode={billData.paperSaveMode}
               onUpdateField={updateField}
+              onClearAll={handleClearOldData}
             />
 
             {/* Split Screen Layout: Form & Live A4 Print Sheet */}

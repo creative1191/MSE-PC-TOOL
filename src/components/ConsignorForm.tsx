@@ -27,7 +27,7 @@ export const ConsignorForm: React.FC<ConsignorFormProps> = React.memo(({
         <div className="text-[10px] font-semibold text-gray-500 mb-1">
           Quick Pick Consignor:
         </div>
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-1 items-center">
           {FREQUENT_CONSIGNORS.map((c, i) => (
             <button
               key={i}
@@ -38,6 +38,20 @@ export const ConsignorForm: React.FC<ConsignorFormProps> = React.memo(({
               {c.name.split(' ')[0]}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => {
+              onUpdateField('consignorName', '');
+              onUpdateField('consignorAddress', '');
+              onUpdateField('consignorPhone', '');
+              onUpdateField('consignorGstin', '');
+              onUpdateField('consignorEmail', '');
+            }}
+            className="text-[11px] bg-red-50 hover:bg-red-100 text-red-700 font-medium px-2 py-0.5 rounded border border-red-200 cursor-pointer"
+            title="Clear consignor fields"
+          >
+            Clear
+          </button>
         </div>
       </div>
 
@@ -48,10 +62,10 @@ export const ConsignorForm: React.FC<ConsignorFormProps> = React.memo(({
           </label>
           <input
             type="text"
-            value={billData.consignorName}
+            value={billData.consignorName || ''}
             onChange={(e) => onUpdateField('consignorName', e.target.value)}
-            className="w-full border border-gray-300 rounded px-2.5 py-1.5 font-bold text-gray-900 focus:outline-none focus:border-blue-600"
-            placeholder="e.g. Dharmendra kumar kushwaha"
+            className="w-full border border-gray-300 rounded px-2.5 py-1.5 font-bold text-gray-900 focus:outline-none focus:border-blue-600 placeholder:text-gray-400 placeholder:font-normal"
+            placeholder="Consignor Name"
           />
         </div>
 
@@ -61,9 +75,9 @@ export const ConsignorForm: React.FC<ConsignorFormProps> = React.memo(({
           </label>
           <textarea
             rows={2}
-            value={billData.consignorAddress}
+            value={billData.consignorAddress || ''}
             onChange={(e) => onUpdateField('consignorAddress', e.target.value)}
-            className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-gray-800 focus:outline-none focus:border-blue-600 resize-none"
+            className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-gray-800 focus:outline-none focus:border-blue-600 resize-none placeholder:text-gray-400 placeholder:font-normal"
             placeholder="Full address with pin code"
           />
         </div>
@@ -75,10 +89,10 @@ export const ConsignorForm: React.FC<ConsignorFormProps> = React.memo(({
             </label>
             <input
               type="text"
-              value={billData.consignorPhone}
+              value={billData.consignorPhone || ''}
               onChange={(e) => onUpdateField('consignorPhone', e.target.value)}
-              className="w-full border border-gray-300 rounded px-2.5 py-1.5 font-mono text-gray-900 focus:outline-none focus:border-blue-600"
-              placeholder="e.g. 0000000000"
+              className="w-full border border-gray-300 rounded px-2.5 py-1.5 font-mono text-gray-900 focus:outline-none focus:border-blue-600 placeholder:text-gray-400 placeholder:font-normal"
+              placeholder="Sender Phone Number"
             />
           </div>
           <div>
@@ -87,10 +101,10 @@ export const ConsignorForm: React.FC<ConsignorFormProps> = React.memo(({
             </label>
             <input
               type="text"
-              value={billData.senderDepot}
+              value={billData.senderDepot || ''}
               onChange={(e) => onUpdateField('senderDepot', e.target.value)}
-              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-gray-800 focus:outline-none focus:border-blue-600"
-              placeholder="e.g. SATNA DEPOT (MP)"
+              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-gray-800 focus:outline-none focus:border-blue-600 placeholder:text-gray-400 placeholder:font-normal"
+              placeholder="Sender Depot"
             />
           </div>
         </div>

@@ -138,10 +138,10 @@ export const ShipmentSpecsForm: React.FC<ShipmentSpecsFormProps> = React.memo(({
           </div>
           <input
             type="text"
-            placeholder="e.g. ELECTRIC ITEMS"
-            value={billData.contentSpec}
+            placeholder="Content Spec"
+            value={billData.contentSpec || ''}
             onChange={(e) => onUpdateField('contentSpec', e.target.value.toUpperCase())}
-            className="w-full border border-gray-300 rounded px-2 py-1 font-semibold text-gray-900 bg-white"
+            className="w-full border border-gray-300 rounded px-2 py-1 font-semibold text-gray-900 bg-white placeholder:text-gray-400 placeholder:font-normal"
           />
         </div>
         <div>

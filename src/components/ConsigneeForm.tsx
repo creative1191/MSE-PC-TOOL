@@ -17,9 +17,27 @@ export const ConsigneeForm: React.FC<ConsigneeFormProps> = React.memo(({
           <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
           <span>Consignee Details (Recipient)</span>
         </span>
-        <span className="text-[10px] font-mono text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-bold">
-          DEST: {billData.dest || 'MEHSANA'}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-mono text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-bold">
+            DEST: {billData.dest || '---'}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              onUpdateField('consigneeName', '');
+              onUpdateField('consigneeAddress', '');
+              onUpdateField('consigneePhone', '');
+              onUpdateField('consigneeGstin', '');
+              onUpdateField('consigneeEmail', '');
+              onUpdateField('dest', '');
+              onUpdateField('customerRefNo', '');
+            }}
+            className="text-[10px] text-red-600 hover:text-red-800 hover:bg-red-50 px-1.5 py-0.5 rounded border border-red-200 font-semibold cursor-pointer"
+            title="Clear all recipient fields"
+          >
+            Clear
+          </button>
+        </div>
       </div>
 
       <div className="space-y-2 text-xs">
@@ -29,10 +47,10 @@ export const ConsigneeForm: React.FC<ConsigneeFormProps> = React.memo(({
           </label>
           <input
             type="text"
-            value={billData.consigneeName}
+            value={billData.consigneeName || ''}
             onChange={(e) => onUpdateField('consigneeName', e.target.value)}
-            className="w-full border border-gray-300 rounded px-2.5 py-1.5 font-bold text-gray-900 focus:outline-none focus:border-blue-600"
-            placeholder="e.g. Mantra softech india pvt ltd"
+            className="w-full border border-gray-300 rounded px-2.5 py-1.5 font-bold text-gray-900 focus:outline-none focus:border-blue-600 placeholder:text-gray-400 placeholder:font-normal"
+            placeholder="Consignee Name"
           />
         </div>
 
@@ -42,10 +60,10 @@ export const ConsigneeForm: React.FC<ConsigneeFormProps> = React.memo(({
           </label>
           <textarea
             rows={2}
-            value={billData.consigneeAddress}
+            value={billData.consigneeAddress || ''}
             onChange={(e) => onUpdateField('consigneeAddress', e.target.value)}
-            className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-gray-800 focus:outline-none focus:border-blue-600 resize-none"
-            placeholder="e.g. LS no 2376/1A, MEHSANA, GUJARAT, 384440"
+            className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-gray-800 focus:outline-none focus:border-blue-600 resize-none placeholder:text-gray-400 placeholder:font-normal"
+            placeholder="Consignee Full Address with PIN"
           />
         </div>
 
@@ -56,10 +74,10 @@ export const ConsigneeForm: React.FC<ConsigneeFormProps> = React.memo(({
             </label>
             <input
               type="text"
-              value={billData.consigneePhone}
+              value={billData.consigneePhone || ''}
               onChange={(e) => onUpdateField('consigneePhone', e.target.value)}
-              className="w-full border border-gray-300 rounded px-2.5 py-1.5 font-mono text-gray-900 focus:outline-none focus:border-blue-600"
-              placeholder="e.g. 0000000000"
+              className="w-full border border-gray-300 rounded px-2.5 py-1.5 font-mono text-gray-900 focus:outline-none focus:border-blue-600 placeholder:text-gray-400 placeholder:font-normal"
+              placeholder="Recipient Phone Number"
             />
           </div>
           <div>

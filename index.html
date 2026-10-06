@@ -3,10 +3,42 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Customer Invoice Generator</title>
-    <meta name="description" content="Customer Invoice Generator - Multi-Courier Windows desktop suite for DTDC, Blue Dart, and Delhivery invoices and A4 4-up shipping labels." />
-    <meta property="og:title" content="Customer Invoice Generator" />
-    <meta property="og:description" content="Customer Invoice Generator - Multi-Courier Windows desktop suite for DTDC, Blue Dart, and Delhivery invoices and A4 4-up shipping labels." />
+    <script>
+      (function() {
+        try {
+          const originalFetch = window.fetch ? window.fetch.bind(window) : null;
+          let activeFetch = originalFetch;
+
+          const descriptor = Object.getOwnPropertyDescriptor(window, 'fetch') ||
+                             Object.getOwnPropertyDescriptor(Object.getPrototypeOf(window), 'fetch');
+
+          if (!descriptor || !descriptor.set) {
+            Object.defineProperty(window, 'fetch', {
+              get() {
+                return activeFetch;
+              },
+              set(newVal) {
+                activeFetch = typeof newVal === 'function' ? newVal.bind(window) : newVal;
+              },
+              configurable: true,
+              enumerable: true
+            });
+          }
+        } catch (e) {}
+
+        window.addEventListener('error', function(event) {
+          if (event && event.message && event.message.includes('Cannot set property fetch')) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return true;
+          }
+        }, true);
+      })();
+    </script>
+    <title>DTDC Bill Generator</title>
+    <meta name="description" content="Multi-courier Windows 11 bill generator and 4-up A4 shipping label printing system supporting DTDC, Blue Dart, and Delhivery with Snipping Tool paste, multi-page PDF splitting, A4 2x2 grid layout, and print-ready export." />
+    <meta property="og:title" content="DTDC Bill Generator" />
+    <meta property="og:description" content="Multi-courier Windows 11 bill generator and 4-up A4 shipping label printing system supporting DTDC, Blue Dart, and Delhivery with Snipping Tool paste, multi-page PDF splitting, A4 2x2 grid layout, and print-ready export." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />

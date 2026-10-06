@@ -187,39 +187,89 @@ export function parseCourierOcrText(rawText: string, preferredCourier?: CourierT
     return result;
   }
 
+  // UNIVERSAL MULTI-COPY & MULTI-LABEL SHEET PROTECTION (DTDC, Blue Dart, Delhivery):
+  // Courier bills and labels frequently print 2, 3, or 4 copies or labels on a single A4 page:
+  // - DTDC: "Sender's Copy", "Account's Copy", "POD Copy"
+  // - Blue Dart: "Shipper's Copy", "Consignee's Copy", "POD Copy", "Accounts Copy"
+  // - Delhivery: 4-Up label sheets (4 labels on 1 sheet) or "Consignor Copy", "Transporter Copy"
+  //
+  // Extract data strictly from the PRIMARY (first / shipper's) copy to prevent repeated or mixed fields!
+  let effectiveText = rawText;
+
+  // 1. Look for explicit Shipper / Sender Copy marker
+  const primaryCopyIndex = rawText.search(
+    /(?:Sender['’]s\s*Copy|Shipper['’]s\s*Copy|Origin\s*Copy|Customer\s*Copy|Consignor\s*Copy|Original\s*for\s*(?:Consignor|Shipper))/i
+  );
+  if (primaryCopyIndex > 50) {
+    const endMatch = rawText.slice(primaryCopyIndex).match(/^[^\n\r]+/);
+    effectiveText = rawText.slice(0, primaryCopyIndex + (endMatch ? endMatch[0].length : 25));
+  } else {
+    // 2. Check for courier brand or AWB repeating multiple times on the same sheet
+    const brandRegexes = [
+      /DTDC\s*Express\s*Limited/gi,
+      /Blue\s*Dart\s*Express(?:\s*Limited)?/gi,
+      /(?:Powered\s*by\s*)?Delhivery(?:\s*Private\s*Limited|\s*Surface|\s*Express)?/gi,
+      /Air\s*Waybill\s*No\.?/gi,
+      /\bAWB\s*No\.?\s*:/gi,
+    ];
+
+    for (const bRegex of brandRegexes) {
+      const matches = [...rawText.matchAll(bRegex)];
+      if (matches.length > 1 && matches[1].index && matches[1].index > 100) {
+        effectiveText = rawText.slice(0, matches[1].index);
+        break;
+      }
+    }
+  }
+
   // Detect courier or use preferred
-  const detected = detectCourierFromText(rawText) || preferredCourier || 'DTDC';
+  const detected = detectCourierFromText(effectiveText) || preferredCourier || 'DTDC';
   result.detectedCourier = detected;
+
+  // Helper to extract clean multiline address and discard headers/footers
+  const extractCleanAddress = (block: string): string => {
+    return block
+      .split(/\r?\n/)
+      .map((l) => l.trim().replace(/^,\s*/, '').replace(/,\s*$/, ''))
+      .filter(
+        (l) =>
+          l.length > 0 &&
+          !l.match(
+            /^(?:gstin|gst|phone|tel|email|contact|customer|consignee|consignor|cin|content|paperwork|declared|no\s*of|actual|mode|awb|dim|charged|name\s*:)/i
+          )
+      )
+      .join(', ');
+  };
 
   // ================= 1. AWB NUMBER EXTRACTION =================
   if (detected === 'BLUEDART') {
-    const bdAwbMatch = rawText.match(/(?:Waybill|Way\s*Bill|AWB(?:\s*Number)?|Air\s*Waybill|WBN|Tracking\s*(?:No|#)|Wb\s*No)\s*[:#\.\-]?\s*([0-9]{8,12})/i);
+    const bdAwbMatch = effectiveText.match(/(?:Waybill|Way\s*Bill|AWB(?:\s*Number)?|Air\s*Waybill|WBN|Tracking\s*(?:No|#)|Wb\s*No)\s*[:#\.\-]?\s*([0-9]{8,12})/i);
     if (bdAwbMatch && bdAwbMatch[1]) {
       result.awb = bdAwbMatch[1].trim();
     } else {
-      const bdFallback = rawText.match(/\b([0-9]{9,11})\b/);
+      const bdFallback = effectiveText.match(/\b([0-9]{9,11})\b/);
       if (bdFallback && bdFallback[1]) {
         result.awb = bdFallback[1].trim();
       }
     }
   } else if (detected === 'DELHIVERY') {
     // Delhivery AWB: e.g. "AWB Number: 34084710004874", "AWB: 1412345678901"
-    const delAwbMatch = rawText.match(/(?:AWB(?:\s*Number)?|Waybill|LR\s*No|Tracking\s*(?:No|#)|Order\s*ID)\s*[:#\.\-]?\s*([0-9]{12,15})/i);
+    const delAwbMatch = effectiveText.match(/(?:AWB(?:\s*Number)?|Waybill|LR\s*No|Tracking\s*(?:No|#)|Order\s*ID)\s*[:#\.\-]?\s*([0-9]{12,15})/i);
     if (delAwbMatch && delAwbMatch[1]) {
       result.awb = delAwbMatch[1].trim();
     } else {
-      const delFallback = rawText.match(/\b([0-9]{12,14})\b/);
+      const delFallback = effectiveText.match(/\b([0-9]{12,14})\b/);
       if (delFallback && delFallback[1]) {
         result.awb = delFallback[1].trim();
       }
     }
   } else {
     // DTDC: Starts with 7D, 7X, or 7 followed by digits/letters
-    const awbPrimary = rawText.match(/AWB\s*No\.?\s*[:\-]?\s*([A-Z0-9]{8,})/i);
+    const awbPrimary = effectiveText.match(/AWB\s*No\.?\s*[:\-]?\s*([A-Z0-9]{8,})/i);
     if (awbPrimary && awbPrimary[1]) {
       result.awb = awbPrimary[1].trim().toUpperCase();
     } else {
-      const awbSecondary = rawText.match(/\b(7[A-Z0-9]{9,12})\b/);
+      const awbSecondary = effectiveText.match(/\b(7[A-Z0-9]{9,12})\b/);
       if (awbSecondary && awbSecondary[1]) {
         result.awb = awbSecondary[1].trim().toUpperCase();
       }
@@ -227,52 +277,52 @@ export function parseCourierOcrText(rawText: string, preferredCourier?: CourierT
   }
 
   // ================= 2. CONSIGNOR (SENDER / BILL FROM) =================
-  // Delhivery / Tax Invoice: BILL FROM section
-  const billFromSection = rawText.match(
-    /(?:BILL\s*FROM|SOLD\s*BY|DISPATCHED\s*FROM|SHIPPER|CONSIGNOR(?:\s*DETAILS)?)\s*[:\-]?\s*([\s\S]+?)(?=(?:SHIPPING\s*ADDRESS|BILLING\s*ADDRESS|BILL\s*TO|SHIP\s*TO|CONSIGNEE|ORDER\s*DETAILS|$))/i
+  // Direct DTDC Consignor Matchers
+  const dtdcConsignorName = effectiveText.match(
+    /(?:Consignor(?:['’]s)?(?:\s*Name)?|Shipper(?:['’]s)?(?:\s*Name)?|Sender(?:['’]s)?(?:\s*Name)?|Bill\s*From|Sold\s*By|Dispatched\s*From)\s*[:\-]?\s*([A-Za-z0-9\s\.\-&]{3,50}?)(?:\n|Address|Phone|Contact|Ph|Mob|Tel|GST|$)/i
   );
-
-  if (billFromSection && billFromSection[1]) {
-    const lines = billFromSection[1]
-      .split(/\r?\n/)
-      .map(l => l.trim())
-      .filter(l => l.length > 0 && !l.match(/^(email:|gst\s*number:|phone:|tel:)/i));
-
-    if (lines.length > 0) {
-      result.consignorName = lines[0]; // e.g. "Maa Sharda Enterprises"
-      const addrLines = lines.slice(1);
-      if (addrLines.length > 0) {
-        result.consignorAddress = addrLines.join(', ');
-      }
+  if (dtdcConsignorName && dtdcConsignorName[1]) {
+    const sName = dtdcConsignorName[1].trim();
+    if (!sName.match(/^(address|phone|tel|dtdc|blue dart|delhivery|customer|consignee)$/i)) {
+      result.consignorName = sName;
     }
-  } else {
-    // Fallback consignor match
-    const consignorNameMatch = rawText.match(
-      /(?:Consignor(?:\s*Name)?|Shipper(?:\s*Name)?|Sender(?:\s*Name)?|Return\s*To|From(?:\s*Name)?|Vendor|Merchant)\s*[:\-]?\s*([A-Za-z0-9\s\.\-&]{3,45}?)(?:\n|Address|Phone|Contact|Ph|Mob|Tel|GST|$)/i
-    );
-    if (consignorNameMatch && consignorNameMatch[1]) {
-      const sName = consignorNameMatch[1].trim();
-      if (!sName.match(/^(address|phone|tel|dtdc|blue dart|delhivery)$/i)) {
-        result.consignorName = sName;
-      }
-    }
+  }
 
-    const consignorAddrMatch = rawText.match(
-      /(?:Consignor[\s\S]*?Address|Shipper\s*Address|Sender\s*Address|Return\s*Address)\s*[:\-]?\s*([^\n\r]+(?:\n[^\n\r]+){0,2})/i
+  const dtdcConsignorAddr = effectiveText.match(
+    /(?:Consignor(?:['’]s)?[\s\S]{0,30}?Address|Shipper(?:['’]s)?\s*Address|Sender(?:['’]s)?\s*Address)\s*[:\-]?\s*([^\n\r]+(?:\n[^\n\r]+){0,4}?)(?=\n\s*(?:GSTIN|Phone|Customer|Consignee|Content|$))/i
+  );
+  if (dtdcConsignorAddr && dtdcConsignorAddr[1]) {
+    result.consignorAddress = cleanAddressString(extractCleanAddress(dtdcConsignorAddr[1]), result.consignorName);
+  }
+
+  // Fallback for Bill From section
+  if (!result.consignorName || !result.consignorAddress) {
+    const billFromSection = effectiveText.match(
+      /(?:BILL\s*FROM|SOLD\s*BY|DISPATCHED\s*FROM|SHIPPER|CONSIGNOR(?:\s*DETAILS)?)\s*[:\-]?\s*([\s\S]+?)(?=(?:SHIPPING\s*ADDRESS|BILLING\s*ADDRESS|BILL\s*TO|SHIP\s*TO|CONSIGNEE|ORDER\s*DETAILS|$))/i
     );
-    if (consignorAddrMatch && consignorAddrMatch[1]) {
-      result.consignorAddress = consignorAddrMatch[1].replace(/\r?\n/g, ', ').trim();
+    if (billFromSection && billFromSection[1]) {
+      const lines = billFromSection[1]
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0 && !l.match(/^(email:|gst\s*number:|phone:|tel:)/i));
+
+      if (lines.length > 0 && !result.consignorName) {
+        result.consignorName = lines[0];
+      }
+      if (lines.length > 1 && !result.consignorAddress) {
+        result.consignorAddress = cleanAddressString(lines.slice(1).join(', '), result.consignorName);
+      }
     }
   }
 
   // Consignor GSTIN & Origin City
-  const gstinMatch = rawText.match(/\b([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})\b/);
+  const gstinMatch = effectiveText.match(/\b([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})\b/);
   if (gstinMatch && gstinMatch[1]) {
     result.consignorGstin = gstinMatch[1].trim();
   }
 
-  // Origin detection (from Consignor address or explicit Origin label)
-  const originMatch = rawText.match(/(?:Origin|From\s*Station|From\s*City|Shipped\s*From)\s*[:\-]?\s*([A-Za-z\s]+?)(?:\n|Dest|To|,|$)/i);
+  // Origin detection (from explicit Origin label or Consignor address)
+  const originMatch = effectiveText.match(/(?:Origin|From\s*Station|From\s*City|Shipped\s*From)\s*[:\-]?\s*([A-Za-z\s]+?)(?:\n|Dest|To|,|$)/i);
   if (originMatch && originMatch[1]) {
     const cleanOrigin = originMatch[1].trim().toUpperCase();
     if (cleanOrigin.length >= 2 && cleanOrigin.length <= 25) {
@@ -287,7 +337,7 @@ export function parseCourierOcrText(rawText: string, preferredCourier?: CourierT
       const originPin = extractPinCode(result.consignorAddress);
       if (originPin) {
         const words = result.consignorAddress.split(/[\s,]+/);
-        const pinIndex = words.findIndex(w => w.includes(originPin));
+        const pinIndex = words.findIndex((w) => w.includes(originPin));
         if (pinIndex > 0 && words[pinIndex - 1].length > 2) {
           result.origin = words[pinIndex - 1].replace(/[^A-Za-z]/g, '').toUpperCase();
         }
@@ -296,150 +346,70 @@ export function parseCourierOcrText(rawText: string, preferredCourier?: CourierT
   }
 
   // ================= 3. CONSIGNEE (RECIPIENT / DESTINATION DETAILS) =================
-  // Strict scan and map of ALL available recipient details:
-  // - consigneeName
-  // - consigneeAddress (including PIN code)
-  // - consigneePhone
-  // - dest (Destination city)
-  // - customerRefNo
-  // - consigneeGstin
-
-  let shippingRawBlock = '';
-
-  // STRATEGY A: Explicit SHIPPING ADDRESS block (Delhivery / Tax Invoices)
-  // STOP before BILLING ADDRESS, BILL TO, ORDER DETAILS, or ITEM DESCRIPTION to avoid repeating identical addresses!
-  const shippingSectionMatch = rawText.match(
-    /(?:SHIPPING\s*ADDRESS|SHIP\s*TO|DELIVER(?:Y)?\s*TO|CONSIGNEE\s*\((?:SHIP\s*TO|DELIVER\s*TO)\)|DELIVERY\s*ADDRESS|CONSIGNEE\s*ADDRESS)\s*[:\-]?\s*([\s\S]+?)(?=(?:BILLING\s*ADDRESS|BILL\s*TO\s*ADDRESS|BILL\s*TO|ORDER\s*DETAILS|ITEM\s*DESCRIPTION|PAYMENT\s*TYPE|POWERED\s*BY|$))/i
+  // Direct DTDC Consignee Name Matcher
+  const dtdcConsigneeName = effectiveText.match(
+    /(?:Consignee(?:['’]s)?(?:\s*Name)?|Receiver(?:['’]s)?(?:\s*Name)?|Customer(?:\s*Name)?|Ship\s*To(?:\s*Name)?|Deliver\s*To(?:\s*Name)?)\s*[:\-]?\s*([A-Za-z0-9\s\.\-&]{3,50}?)(?:\n|Address|Phone|Contact|Ph|Mob|Tel|Pin|GST|$)/i
   );
-
-  // STRATEGY B: Consignee block (DTDC / Blue Dart Consignment notes)
-  const consigneeBlockMatch = rawText.match(
-    /(?:CONSIGNEE(?:'S)?(?:\s*DETAILS)?|RECEIVER(?:'S)?(?:\s*DETAILS)?|DELIVERY\s*ADDRESS)\s*[:\-]?\s*([\s\S]+?)(?=(?:CONSIGNOR|SHIPPER|BOOKING\s*BRANCH|TECHNICAL\s*SPECS|ORDER\s*DETAILS|RISK\s*SURCHARGE|$))/i
-  );
-
-  if (shippingSectionMatch && shippingSectionMatch[1] && shippingSectionMatch[1].trim().length > 5) {
-    shippingRawBlock = shippingSectionMatch[1].trim();
-  } else if (consigneeBlockMatch && consigneeBlockMatch[1] && consigneeBlockMatch[1].trim().length > 5) {
-    shippingRawBlock = consigneeBlockMatch[1].trim();
-  }
-
-  if (shippingRawBlock) {
-    // 3.1 Extract phone from within shipping block first
-    const blockPhone = extractPhoneNumber(shippingRawBlock);
-    if (blockPhone) {
-      result.consigneePhone = blockPhone;
-    }
-
-    // 3.2 Extract recipient PIN code
-    const blockPin = extractPinCode(shippingRawBlock);
-
-    // 3.3 Split block into clean lines
-    const lines = shippingRawBlock
-      .split(/\r?\n/)
-      .map(l => l.trim())
-      .filter(l => l.length > 0 && !l.match(/^(billing|shipping|order|sales|payment|awb|tax|invoice|phone|tel|mob|contact)/i));
-
-    if (lines.length > 0) {
-      // Line 0 is typically the Consignee Name (e.g. "Gurvinder singh" or "Mantra softech india pvt ltd")
-      let rawName = lines[0]
-        .replace(/^(?:Name|Consignee(?:'s)?(?:\s*Name)?|Receiver(?:\s*Name)?|To|Customer(?:\s*Name)?)\s*[:\-]?\s*/i, '')
-        .trim();
-
-      // Check if name has attached address on the same line
-      const nameParts = rawName.split(/[,;\t]+/);
-      if (nameParts.length > 1 && nameParts[0].length >= 3) {
-        result.consigneeName = nameParts[0].trim();
-        const remainingAddr = [nameParts.slice(1).join(', '), ...lines.slice(1)].join(', ');
-        result.consigneeAddress = cleanAddressString(remainingAddr, result.consigneeName);
-      } else {
-        result.consigneeName = rawName;
-        const addrLines = lines.slice(1);
-        if (addrLines.length > 0) {
-          result.consigneeAddress = cleanAddressString(addrLines.join(', '), result.consigneeName);
-        } else {
-          // Single-line block fallback
-          const words = rawName.split(/\s+/);
-          if (words.length >= 4) {
-            result.consigneeName = words.slice(0, 2).join(' ');
-            result.consigneeAddress = cleanAddressString(words.slice(2).join(' '), result.consigneeName);
-          }
-        }
-      }
-    }
-
-    // Ensure PIN code is included in consigneeAddress if found
-    if (blockPin && result.consigneeAddress && !result.consigneeAddress.includes(blockPin)) {
-      result.consigneeAddress = `${result.consigneeAddress} - ${blockPin}`;
-    }
-  }
-
-  // STRATEGY C: Explicit Field Matchers for DTDC & Blue Dart formats
-  if (!result.consigneeName) {
-    const consigneeNameMatch = rawText.match(
-      /(?:Consignee(?:['’]s)?(?:\s*Name)?|Receiver(?:['’]s)?(?:\s*Name)?|Customer(?:\s*Name)?|\bTo\b\s*[:\-])\s*[:\-]?\s*([A-Za-z0-9\s\.\-&]{3,45}?)(?:\n|Address|Phone|Contact|Ph|Mob|Tel|Pin|GST|$)/i
-    );
-    if (consigneeNameMatch && consigneeNameMatch[1]) {
-      const name = consigneeNameMatch[1].trim();
-      if (
-        !name.match(/^(address|phone|tel|dtdc|blue dart|delhivery|total|powered|sales|item|payment|order|tax|invoice|discount)/i) &&
-        !name.includes('INR') &&
-        !name.includes('Powered by') &&
-        !name.includes('Total')
-      ) {
-        result.consigneeName = name;
-      }
-    }
-  }
-
-  if (!result.consigneeAddress) {
-    const consigneeAddrMatch = rawText.match(
-      /(?:Consignee(?:['’]s)?[\s\S]*?Address|Delivery\s*Address|Ship\s*To\s*Address)\s*[:\-]?\s*([^\n\r]+(?:\n[^\n\r]+){0,4}?)(?=(?:GSTIN|Phone|Contact|Mobile|Tel|Email|Courier\s*Charges|Declared\s*Value|Content|$))/i
-    );
-    if (consigneeAddrMatch && consigneeAddrMatch[1]) {
-      result.consigneeAddress = cleanAddressString(consigneeAddrMatch[1].replace(/\r?\n/g, ', '), result.consigneeName);
-    }
-  }
-
-  // Safety filter on consigneeName: Never allow "Total INR", "Powered by", or "tal INR"
-  if (result.consigneeName) {
+  if (dtdcConsigneeName && dtdcConsigneeName[1]) {
+    const rName = dtdcConsigneeName[1].trim();
     if (
-      result.consigneeName.match(/^(total|powered|sales|item|payment|order|tax|invoice|discount)/i) ||
-      result.consigneeName.includes('INR') ||
-      result.consigneeName.includes('Powered')
+      !rName.match(
+        /^(address|phone|tel|dtdc|blue dart|delhivery|total|powered|sales|item|payment|order|tax|invoice|discount)$/i
+      )
     ) {
-      result.consigneeName = '';
+      result.consigneeName = rName;
     }
   }
 
-  // Ensure consigneeAddress is clean and deduplicated
-  if (result.consigneeAddress) {
-    result.consigneeAddress = cleanAddressString(result.consigneeAddress, result.consigneeName);
+  // Direct DTDC Consignee Address Matcher
+  const dtdcConsigneeAddr = effectiveText.match(
+    /(?:Consignee(?:['’]s)?[\s\S]{0,30}?Address|Delivery\s*Address|Ship\s*To\s*Address)\s*[:\-]?\s*([^\n\r]+(?:\n[^\n\r]+){0,4}?)(?=\n\s*(?:GSTIN|Phone|Contact|Mobile|Tel|Email|Courier\s*Charges|Declared\s*Value|Content|$))/i
+  );
+  if (dtdcConsigneeAddr && dtdcConsigneeAddr[1]) {
+    result.consigneeAddress = cleanAddressString(extractCleanAddress(dtdcConsigneeAddr[1]), result.consigneeName);
   }
 
-  // 3.4 Recipient Phone Extraction fallback
-  if (!result.consigneePhone) {
-    // Look specifically for phone near Consignee or Receiver
-    const consigneePhoneMatch = rawText.match(
-      /(?:(?:Consignee|Receiver|Customer|Delivery|Ship\s*To)[\s\S]{0,100}?(?:Phone|Contact|Mobile|Ph|Tel|Mob)\s*[:\-]?\s*)(?:\+?91[\-\s]?)?(?:0)?([6-9]\d{9})\b/i
+  // Shipping Address Block fallback (Delhivery / Tax Invoices)
+  if (!result.consigneeName || !result.consigneeAddress) {
+    const shippingSectionMatch = effectiveText.match(
+      /(?:SHIPPING\s*ADDRESS|SHIP\s*TO|DELIVER(?:Y)?\s*TO|CONSIGNEE\s*\((?:SHIP\s*TO|DELIVER\s*TO)\)|DELIVERY\s*ADDRESS|CONSIGNEE\s*ADDRESS)\s*[:\-]?\s*([\s\S]+?)(?=(?:BILLING\s*ADDRESS|BILL\s*TO\s*ADDRESS|BILL\s*TO|ORDER\s*DETAILS|ITEM\s*DESCRIPTION|PAYMENT\s*TYPE|POWERED\s*BY|$))/i
     );
-    if (consigneePhoneMatch && consigneePhoneMatch[1]) {
-      result.consigneePhone = consigneePhoneMatch[1].trim();
-    } else {
-      const generalPhone = extractPhoneNumber(rawText);
-      if (generalPhone && generalPhone !== result.consignorPhone) {
-        result.consigneePhone = generalPhone;
+
+    if (shippingSectionMatch && shippingSectionMatch[1] && shippingSectionMatch[1].trim().length > 5) {
+      const lines = shippingSectionMatch[1]
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(
+          (l) =>
+            l.length > 0 &&
+            !l.match(/^(billing|shipping|order|sales|payment|awb|tax|invoice|phone|tel|mob|contact)/i)
+        );
+
+      if (lines.length > 0 && !result.consigneeName) {
+        result.consigneeName = lines[0].replace(/^(?:Name|Consignee(?:'s)?|Receiver|To)\s*[:\-]?\s*/i, '').trim();
+      }
+      if (lines.length > 1 && !result.consigneeAddress) {
+        result.consigneeAddress = cleanAddressString(lines.slice(1).join(', '), result.consigneeName);
       }
     }
   }
 
-  // 3.5 Recipient Destination City Extraction
-  const detectedDest = extractDestinationCity(rawText, result.consigneeAddress);
+  // Ensure recipient PIN code is extracted and appended if missing
+  const recipientPin = extractPinCode(result.consigneeAddress || effectiveText);
+  if (recipientPin && result.consigneeAddress && !result.consigneeAddress.includes(recipientPin)) {
+    result.consigneeAddress = `${result.consigneeAddress} - ${recipientPin}`;
+  }
+
+  // Recipient Destination City
+  const detectedDest = extractDestinationCity(effectiveText, result.consigneeAddress);
   if (detectedDest) {
     result.dest = detectedDest;
   }
 
-  // 3.6 Recipient Customer Ref / Order Number
-  const orderRefMatch = rawText.match(/(?:Customer\s*Ref(?:\s*No)?|Order\s*(?:No|ID|Number)|Invoice\s*(?:No|Number)|Ref\s*No)\s*[:\-]?\s*([A-Za-z0-9\-\/]{4,25})/i);
+  // Customer Reference / Order ID
+  const orderRefMatch = effectiveText.match(
+    /(?:Customer\s*Ref(?:\s*No)?|Order\s*(?:No|ID|Number)|Invoice\s*(?:No|Number)|Ref\s*No)\s*[:\-]?\s*([A-Za-z0-9\-\/]{4,25})/i
+  );
   if (orderRefMatch && orderRefMatch[1]) {
     const ref = orderRefMatch[1].trim();
     if (!ref.match(/^(address|phone|courier|dtdc|bluedart)/i)) {
@@ -447,27 +417,38 @@ export function parseCourierOcrText(rawText: string, preferredCourier?: CourierT
     }
   }
 
-  // 3.7 Recipient GSTIN
-  const consigneeGstinMatch = rawText.match(/(?:Consignee\s*GSTIN|Buyer\s*GSTIN|Recipient\s*GSTIN)\s*[:\-]?\s*([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})/i);
+  // Recipient GSTIN
+  const consigneeGstinMatch = effectiveText.match(
+    /(?:Consignee\s*GSTIN|Buyer\s*GSTIN|Recipient\s*GSTIN)\s*[:\-]?\s*([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})/i
+  );
   if (consigneeGstinMatch && consigneeGstinMatch[1]) {
     result.consigneeGstin = consigneeGstinMatch[1].trim();
   }
 
+  // Phone numbers extraction (Filter out dummy '0000000000')
+  const phoneNumbers = [...effectiveText.matchAll(/(?:Phone|Contact|Mobile|Ph|Tel|Mob)\s*[:\-]?\s*(?:\+?91[\-\s]?)?(?:0)?([6-9]\d{9})\b/gi)];
+  if (phoneNumbers.length > 0) {
+    result.consignorPhone = phoneNumbers[0][1];
+    if (phoneNumbers.length > 1) {
+      result.consigneePhone = phoneNumbers[1][1];
+    }
+  }
+
   // ================= 4. PRODUCT, TYPE & MODE =================
   if (detected === 'BLUEDART') {
-    if (rawText.match(/APEX|AIR/i)) {
+    if (effectiveText.match(/APEX|AIR/i)) {
       result.product = 'APEX';
       result.mode = 'AIR';
-    } else if (rawText.match(/SURFACE/i)) {
+    } else if (effectiveText.match(/SURFACE/i)) {
       result.product = 'SURFACE';
       result.mode = 'SURFACE';
     } else {
       result.product = 'DOMESTIC PRIORITY';
       result.mode = 'AIR';
     }
-    result.type = rawText.match(/NON[\-\s]?DOC/i) ? 'NON-DOCUMENT' : 'DOCUMENT';
+    result.type = effectiveText.match(/NON[\-\s]?DOC/i) ? 'NON-DOCUMENT' : 'DOCUMENT';
   } else if (detected === 'DELHIVERY') {
-    if (rawText.match(/SURFACE|HEAVY/i)) {
+    if (effectiveText.match(/SURFACE|HEAVY/i)) {
       result.product = 'Heavy Surface';
       result.mode = 'SURFACE';
     } else {
@@ -477,90 +458,109 @@ export function parseCourierOcrText(rawText: string, preferredCourier?: CourierT
     result.type = 'NON-DOCUMENT';
   } else {
     // DTDC
-    const productMatch = rawText.match(/PRODUCT\s*:\s*([A-Z0-9\s\-]+?)(?:\n|Type|Date|$)/i);
+    const productMatch = effectiveText.match(/PRODUCT\s*:\s*([A-Z0-9\s\-]+?)(?:\n|Type|Date|$)/i);
     if (productMatch && productMatch[1]) {
       result.product = productMatch[1].trim();
     }
-    const typeMatch = rawText.match(/Type\s*:\s*([A-Za-z\-]+)/i);
+    const typeMatch = effectiveText.match(/Type\s*:\s*([A-Za-z\-]+)/i);
     if (typeMatch && typeMatch[1]) {
       result.type = typeMatch[1].trim().toUpperCase().includes('NON') ? 'NON-DOCUMENT' : 'DOCUMENT';
     }
-    const modeMatch = rawText.match(/Mode\s*:\s*([A-Za-z]+)/i);
+    const modeMatch = effectiveText.match(/Mode\s*:\s*([A-Za-z]+)/i);
     if (modeMatch && modeMatch[1]) {
       result.mode = modeMatch[1].trim().toUpperCase();
     }
   }
 
-  // ================= 5. WEIGHT & PIECES =================
-  const actualWtMatch = rawText.match(/(?:Actual\s*Weight|Weight|Gross\s*Wt|Wt)\s*[:\-]?\s*([0-9\.]+\s*(?:Gms|Kgs|kg|gm|KG))/i);
+  // ================= 5. WEIGHT & PIECES (CRITICAL ACCURACY) =================
+  // Actual Weight extraction (e.g. "Actual Weight: 100 Gms", "Gross Wt: 0.50 Kgs", "Physical Weight: 0.35 kg")
+  const actualWtMatch = effectiveText.match(
+    /(?:Actual\s*(?:Weight|Wt)|Gross\s*(?:Weight|Wt)|Physical\s*(?:Weight|Wt)|Dead\s*(?:Weight|Wt)|\bWeight\b|\bWt\b)\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?(?:\s*(?:Gms?|Kgs?|gm|kg|g|G|K)\.?)?)/i
+  );
   if (actualWtMatch && actualWtMatch[1]) {
-    result.actualWeight = actualWtMatch[1].trim();
+    const rawVal = actualWtMatch[1].trim();
+    result.actualWeight = /^[0-9]+(?:\.[0-9]+)?$/.test(rawVal) ? `${rawVal} Kgs` : rawVal;
   }
 
-  const chargedWtMatch = rawText.match(/(?:Charged\s*Weight|Chargeable\s*Wt|Vol\s*Weight)\s*[:\-]?\s*([0-9\.]+\s*(?:Gms|Kgs|kg|gm|KG))/i);
+  // Charged Weight extraction (e.g. "Charged weight: 500 Gms", "Chargeable Wt: 1.5 Kgs", "Volumetric Weight: 0.50 kg")
+  const chargedWtMatch = effectiveText.match(
+    /(?:Charged\s*(?:weight|wt)|Chargeable\s*(?:Weight|Wt)|Vol(?:umetric)?\.?\s*(?:Weight|Wt))\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?(?:\s*(?:Gms?|Kgs?|gm|kg|g|G|K)\.?)?)/i
+  );
   if (chargedWtMatch && chargedWtMatch[1]) {
-    result.chargedWeight = chargedWtMatch[1].trim();
+    const rawVal = chargedWtMatch[1].trim();
+    result.chargedWeight = /^[0-9]+(?:\.[0-9]+)?$/.test(rawVal) ? `${rawVal} Kgs` : rawVal;
   }
 
   // Pieces: check Qty or No of Pieces
-  const piecesMatch = rawText.match(/(?:No\s*Of\s*Pieces|Pieces|Pcs|Quantity|Qty)\s*[:\-]?\s*([0-9]+)/i);
-  if (piecesMatch && piecesMatch[1]) {
-    result.pieces = piecesMatch[1].trim();
-  }
+  const piecesMatch = effectiveText.match(/(?:No\s*Of\s*Pieces|Pieces|Pcs|Quantity|Qty)\s*[:\-]?\s*([0-9]+)/i);
+  result.pieces = piecesMatch && piecesMatch[1] ? piecesMatch[1].trim() : '1';
 
-  // ================= 6. CONTENT SPECIFICATION & VALUE =================
-  // Comprehensive extraction for Item Description, Goods, Commodity, and Products
-  const contentMatch = rawText.match(
-    /(?:Item\s*Desc(?:ription)?|Product\s*(?:Description|Name|Title)?|Description\s*Of\s*Goods|Nature\s*Of\s*Goods|Goods\s*Description|Content\s*(?:Specification)?|Contents|Commodity|Particulars|Item\s*Name|\bItems\b|\bContent\b)\s*[:\-]?\s*([A-Za-z0-9\s,\/\.\-&]{2,60}?)(?:\n|SKU|Qty|Declared|Value|Weight|Pieces|Date|Rs|₹|Total|Rate|Tax|HSN|$)/i
+  // ================= 6. CONTENT SPECIFICATION AUTO-FILL =================
+  const contentMatch = effectiveText.match(
+    /(?:Item\s*Desc(?:ription)?|Product\s*(?:Description|Name|Title)?|Description\s*Of\s*Goods|Nature\s*Of\s*Goods|Declared\s*Description(?:\s*Of\s*Goods)?|Goods\s*Description|Content\s*Specification|Contents|Commodity|Particulars|Item\s*Name|\bItems\b|\bContent\b)\s*[:\-]\s*([A-Za-z0-9\s,\/\.\-&]{2,60}?)(?=\n|SKU|Qty|Declared|Value|Weight|Pieces|Date|Rs|₹|Total|Rate|Tax|HSN|$)/i
   );
   if (contentMatch && contentMatch[1]) {
     const cleanContent = contentMatch[1].replace(/^(?:of|for|is)\s+/i, '').trim();
-    if (cleanContent.length >= 2 && cleanContent.length <= 50 && !cleanContent.match(/^(sku|qty|rate|tax|total|amount|inr|hsn|price)/i)) {
+    if (
+      cleanContent.length >= 2 &&
+      cleanContent.length <= 50 &&
+      !cleanContent.match(/^(sku|qty|rate|tax|total|amount|inr|hsn|price|paperwork|declared|not\s*applicable)/i)
+    ) {
       result.contentSpec = cleanContent.toUpperCase();
     }
   }
 
-  // Fallback 1: Scan for common product types if not explicitly matched above
-  if (!result.contentSpec) {
-    const commonCategories = [
-      { pattern: /\b(?:milk\s*analys(?:er|or)|milk\s*tester)\b/i, name: 'MILK ANALYSER' },
-      { pattern: /\b(?:electric\s*items?|electrical|electronics?)\b/i, name: 'ELECTRIC ITEMS' },
-      { pattern: /\b(?:laptop|notebook|computer|desktop)\b/i, name: 'LAPTOP & ACCESSORIES' },
-      { pattern: /\b(?:mobile|smartphone|phone\s*accessories)\b/i, name: 'MOBILE PHONE & ACCESSORIES' },
-      { pattern: /\b(?:documents?|papers?|legal\s*papers?|agreements?)\b/i, name: 'DOCUMENTS' },
-      { pattern: /\b(?:cloth(?:es|ing)?|garments?|saree|dress|textile|apparel)\b/i, name: 'CLOTHING & APPAREL' },
-      { pattern: /\b(?:medicines?|pharmaceuticals?|tablets?|capsules?)\b/i, name: 'MEDICINES' },
-      { pattern: /\b(?:auto\s*parts?|automobile|vehicle\s*parts?|spare\s*parts?)\b/i, name: 'AUTO SPARE PARTS' },
-      { pattern: /\b(?:books?|study\s*material|stationery)\b/i, name: 'BOOKS & STATIONERY' },
-      { pattern: /\b(?:hardware|tools?|industrial\s*goods)\b/i, name: 'HARDWARE TOOLS' },
-    ];
+  // Guaranteed Content Auto-Fill: If blank or Not Applicable, automatically deduce from Courier Type or Context
+  if (!result.contentSpec || result.contentSpec.toUpperCase().includes('NOT APPLICABLE')) {
+    const isDocumentShipment =
+      result.type === 'DOCUMENT' ||
+      effectiveText.match(/\b(?:Type\s*:\s*DOCUMENT|APEX\s*DOC|DOX|\bDOCUMENTS?\b)\b/i);
 
-    for (const cat of commonCategories) {
-      if (cat.pattern.test(rawText)) {
-        result.contentSpec = cat.name;
-        break;
+    if (isDocumentShipment) {
+      result.contentSpec = 'DOCUMENTS';
+    } else {
+      const commonCategories = [
+        { pattern: /\b(?:milk\s*analys(?:er|or)|milk\s*tester)\b/i, name: 'MILK ANALYSER' },
+        { pattern: /\b(?:electric\s*items?|electrical|electronics?)\b/i, name: 'ELECTRIC ITEMS' },
+        { pattern: /\b(?:laptop|notebook|computer|desktop)\b/i, name: 'LAPTOP & ACCESSORIES' },
+        { pattern: /\b(?:mobile|smartphone|phone\s*accessories)\b/i, name: 'MOBILE PHONE & ACCESSORIES' },
+        { pattern: /\b(?:documents?|papers?|legal\s*papers?|agreements?)\b/i, name: 'DOCUMENTS' },
+        { pattern: /\b(?:cloth(?:es|ing)?|garments?|saree|dress|textile|apparel)\b/i, name: 'CLOTHING & APPAREL' },
+        { pattern: /\b(?:medicines?|pharmaceuticals?|tablets?|capsules?)\b/i, name: 'MEDICINES' },
+        { pattern: /\b(?:auto\s*parts?|automobile|vehicle\s*parts?|spare\s*parts?)\b/i, name: 'AUTO SPARE PARTS' },
+        { pattern: /\b(?:books?|study\s*material|stationery)\b/i, name: 'BOOKS & STATIONERY' },
+        { pattern: /\b(?:hardware|tools?|industrial\s*goods)\b/i, name: 'HARDWARE TOOLS' },
+      ];
+
+      for (const cat of commonCategories) {
+        if (cat.pattern.test(effectiveText)) {
+          result.contentSpec = cat.name;
+          break;
+        }
+      }
+
+      if (!result.contentSpec) {
+        result.contentSpec = isDocumentShipment ? 'DOCUMENTS' : 'ELECTRIC ITEMS';
       }
     }
   }
 
-  // Fallback 2: Default standard content specification so it is NEVER empty
-  if (!result.contentSpec) {
-    result.contentSpec = result.type === 'DOCUMENT' ? 'DOCUMENTS' : 'ELECTRIC ITEMS';
-  }
-
-  const declaredMatch = rawText.match(/(?:Declared\s*Value|Total(?:\s*INR)?|Invoice\s*Value|COD\s*Amount)\s*[:\-]?\s*(?:Rs\.?|₹|INR)?\s*([0-9]+(?:\.[0-9]{2})?)/i);
+  // Declared Value
+  const declaredMatch = effectiveText.match(/(?:Declared\s*Value|Total(?:\s*INR)?|Invoice\s*Value|COD\s*Amount)\s*[:\-]?\s*(?:Rs\.?|₹|INR)?\s*([0-9]+(?:\.[0-9]{2})?)/i);
   if (declaredMatch && declaredMatch[1]) {
     result.declaredValue = declaredMatch[1].trim();
+  } else {
+    result.declaredValue = 'Not Applicable';
   }
 
-  // ================= 7. COURIER CHARGES =================
-  const chargesMatch = rawText.match(/(?:Courier\s*Charges|Freight|Booking\s*Charge)\s*[:\-]?\s*(?:Rs\.?|₹)?\s*([0-9]+(?:\.[0-9]{2})?)/i);
+  // Courier Charges
+  const chargesMatch = effectiveText.match(/(?:Courier\s*Charges|Freight|Booking\s*Charge)\s*[:\-]?\s*(?:Rs\.?|₹)?\s*([0-9]+(?:\.[0-9]{2})?)/i);
   if (chargesMatch && chargesMatch[1]) {
     result.courierCharges = parseFloat(chargesMatch[1]);
   }
 
-  // ================= 8. DATE =================
-  const dateMatch = rawText.match(/(?:Date|Sale\s*Date)\s*[:\-]?\s*(\d{4}[\-\/]\d{1,2}[\-\/]\d{1,2}|\d{1,2}[\-\/]\d{1,2}[\-\/]\d{4}|[A-Za-z]{3}\s+[A-Za-z]{3}\s+\d{1,2}\s+\d{4})/i);
+  // Date
+  const dateMatch = effectiveText.match(/(?:Date|Sale\s*Date)\s*[:\-]?\s*(\d{4}[\-\/]\d{1,2}[\-\/]\d{1,2}|\d{1,2}[\-\/]\d{1,2}[\-\/]\d{4}|[A-Za-z]{3}\s+[A-Za-z]{3}\s+\d{1,2}\s+\d{4})/i);
   if (dateMatch && dateMatch[1]) {
     result.date = dateMatch[1].trim();
   }

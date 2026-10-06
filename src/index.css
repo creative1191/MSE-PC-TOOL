@@ -27,20 +27,58 @@
 }
 
 /* =========================================================================
+   BASE CANVAS / SCREEN & EXPORT STYLES FOR A4 PRINT SHEETS
+   - Guarantees 7-8mm safe margin so invoice NEVER bleeds or cuts off edges.
+   ========================================================================= */
+.print-container {
+  width: 210mm;
+  min-width: 210mm;
+  max-width: 210mm;
+  min-height: 297mm;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  padding: 8mm 7mm;
+  margin: 0 auto;
+}
+
+.print-container.margin-normal {
+  padding: 8mm 7mm;
+}
+
+.print-container.margin-relaxed {
+  padding: 12mm 10mm;
+}
+
+.print-container.margin-compact {
+  padding: 5mm 5mm;
+}
+
+.print-container-landscape {
+  width: 297mm;
+  min-width: 297mm;
+  max-width: 297mm;
+  min-height: 210mm;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  padding: 8mm 8mm;
+  margin: 0 auto;
+}
+
+/* =========================================================================
    PRINT SPECIFIC RULES FOR DTDC, BLUE DART, AND DELHIVERY INVOICES & LABELS
    - Fixes Requirement 3: Prevents phantom blank page; triggers directly on Page 1.
    - Fixes Requirement 4: Enforces strict border visibility & print-color-adjust.
    ========================================================================= */
 @media print {
-  /* Page Definition: Standard A4 without unneeded printer margins */
+  /* Page Definition: Standard A4 with 4mm safe printer hardware margins */
   @page {
     size: A4 portrait;
-    margin: 0mm;
+    margin: 4mm 5mm;
   }
 
   @page landscape-page {
     size: A4 landscape;
-    margin: 0mm;
+    margin: 4mm 5mm;
   }
 
   /* Universal print color adjustment enforcement */
@@ -67,13 +105,10 @@
     print-color-adjust: exact !important;
   }
 
-  /* Collapse all non-printable wrappers and layout grids so no phantom spacing pushes to Page 2 */
+  /* Collapse only outer non-printable wrappers so no phantom spacing pushes to Page 2 */
   #root,
   .min-h-screen,
   main,
-  .grid,
-  [class*="col-span"],
-  [class*="space-y"],
   .invoice-preview-wrapper {
     background: #ffffff !important;
     padding: 0 !important;
@@ -87,7 +122,21 @@
     max-height: none !important;
     display: block !important;
     overflow: visible !important;
-    gap: 0 !important;
+  }
+
+  /* Explicitly preserve and enforce grid & flex layouts inside invoice and label sheets */
+  #dtdc-print-area .grid,
+  .print-container .grid,
+  .print-container-landscape .grid,
+  .print-page-wrapper .grid {
+    display: grid !important;
+  }
+
+  #dtdc-print-area .flex,
+  .print-container .flex,
+  .print-container-landscape .flex,
+  .print-page-wrapper .flex {
+    display: flex !important;
   }
 
   /* Strict Screen-only Hiding */
@@ -114,13 +163,13 @@
      INVOICE CONTAINER: STRICT A4 PORTRAIT PAGINATION & ZERO PHANTOM PAGES
      ========================================================================= */
   .print-container {
-    width: 210mm !important;
-    max-width: 210mm !important;
-    height: 297mm !important;
-    max-height: 297mm !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
     min-height: 0 !important;
     margin: 0 auto !important;
-    padding: 6mm 6mm !important;
+    padding: 2mm 2mm !important;
     box-shadow: none !important;
     border: none !important;
     background: #ffffff !important;
@@ -131,19 +180,19 @@
     break-after: avoid !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
 
   .print-container.margin-normal {
-    padding: 6mm 6mm !important;
+    padding: 2mm 2mm !important;
   }
 
   .print-container.margin-relaxed {
-    padding: 9mm 8mm !important;
+    padding: 5mm 4mm !important;
   }
 
   .print-container.margin-compact {
-    padding: 4mm 5mm !important;
+    padding: 0mm 0mm !important;
   }
 
   /* LANDSCAPE INVOICE CONTAINER */

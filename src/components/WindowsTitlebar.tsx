@@ -20,7 +20,7 @@ export const WindowsTitlebar: React.FC<WindowsTitlebarProps> = ({
           <img src="/favicon.svg" alt="App Icon" className="w-full h-full object-contain" />
         </div>
         <h1 className="font-semibold text-xs tracking-wide text-slate-100 flex items-center gap-2">
-          <span>Customer Invoice Generator</span>
+          <span>DTDC Bill Generator</span>
         </h1>
       </div>
 
