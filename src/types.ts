@@ -108,3 +108,23 @@ export interface OCRMatchResult {
   courierCharges?: number | string;
   rawText?: string;
 }
+
+export interface GoogleBusinessProfile {
+  id: 'biz1' | 'biz2';
+  name: string;
+  tagline: string;
+  reviewUrl: string;
+  placeId?: string;
+  address?: string;
+  enabled: boolean;
+}
+
+export interface GoogleReviewsConfig {
+  autoOpenAfterPrint: boolean;
+  business1: GoogleBusinessProfile;
+  business2: GoogleBusinessProfile;
+  showReviewQrOnReceipt: boolean;
+  pamphletLink?: string;
+  customMessageIntro?: string;
+}
+

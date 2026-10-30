@@ -1,14 +1,17 @@
 import React from 'react';
+import { BookOpen } from 'lucide-react';
 import { DTDCBillData } from '../types';
 
 interface ConsigneeFormProps {
   billData: DTDCBillData;
   onUpdateField: (field: keyof DTDCBillData, value: any) => void;
+  onOpenAddressBook?: () => void;
 }
 
 export const ConsigneeForm: React.FC<ConsigneeFormProps> = React.memo(({
   billData,
   onUpdateField,
+  onOpenAddressBook,
 }) => {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-2xs">
@@ -21,6 +24,17 @@ export const ConsigneeForm: React.FC<ConsigneeFormProps> = React.memo(({
           <span className="text-[10px] font-mono text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-bold">
             DEST: {billData.dest || '---'}
           </span>
+          {onOpenAddressBook && (
+            <button
+              type="button"
+              onClick={onOpenAddressBook}
+              className="text-[10px] text-amber-900 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded border border-amber-300 font-semibold cursor-pointer flex items-center gap-1 shadow-2xs"
+              title="Pick saved recipient from Address Book"
+            >
+              <BookOpen className="w-3 h-3 text-amber-700" />
+              <span>Address Book</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {

@@ -1,4 +1,5 @@
 import React from 'react';
+import { BookOpen } from 'lucide-react';
 import { DTDCBillData } from '../types';
 import { FREQUENT_CONSIGNORS } from '../data/defaults';
 
@@ -6,12 +7,14 @@ interface ConsignorFormProps {
   billData: DTDCBillData;
   onUpdateField: (field: keyof DTDCBillData, value: any) => void;
   onApplyConsignor: (consignor: { name: string; address: string; phone: string }) => void;
+  onOpenAddressBook?: () => void;
 }
 
 export const ConsignorForm: React.FC<ConsignorFormProps> = React.memo(({
   billData,
   onUpdateField,
   onApplyConsignor,
+  onOpenAddressBook,
 }) => {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-2xs">
@@ -38,6 +41,17 @@ export const ConsignorForm: React.FC<ConsignorFormProps> = React.memo(({
               {c.name.split(' ')[0]}
             </button>
           ))}
+          {onOpenAddressBook && (
+            <button
+              type="button"
+              onClick={onOpenAddressBook}
+              className="text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-900 font-semibold px-2 py-0.5 rounded border border-amber-300 cursor-pointer flex items-center gap-1 shadow-2xs"
+              title="Pick saved consignor from Address Book"
+            >
+              <BookOpen className="w-3 h-3 text-amber-700" />
+              <span>Address Book</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {

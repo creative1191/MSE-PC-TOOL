@@ -1,5 +1,5 @@
 import React from 'react';
-import { Printer, FileDown, Image as ImageIcon, FileText, Leaf } from 'lucide-react';
+import { Printer, FileDown, Image as ImageIcon, FileText, Leaf, Share2 } from 'lucide-react';
 import { DTDCBillData, CourierConfig } from '../types';
 
 interface BillExportBarProps {
@@ -11,6 +11,8 @@ interface BillExportBarProps {
   onExportPng: (highRes: boolean) => void;
   onExportHtml: () => void;
   onUpdateField?: (field: keyof DTDCBillData, value: any) => void;
+  onShareWhatsAppCard?: () => void;
+  onDispatchReceipt?: () => void;
 }
 
 export const BillExportBar: React.FC<BillExportBarProps> = React.memo(({
@@ -22,6 +24,8 @@ export const BillExportBar: React.FC<BillExportBarProps> = React.memo(({
   onExportPng,
   onExportHtml,
   onUpdateField,
+  onShareWhatsAppCard,
+  onDispatchReceipt,
 }) => {
   const currentMargin = billData.printMargin || 'normal';
 
@@ -101,6 +105,30 @@ export const BillExportBar: React.FC<BillExportBarProps> = React.memo(({
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
+        {onDispatchReceipt && (
+          <button
+            type="button"
+            onClick={onDispatchReceipt}
+            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-1.5 rounded-md shadow-xs transition-colors cursor-pointer"
+            title="Dispatch Receipt, Pamphlet & 1-Tap 5-Star Review Links to customer on WhatsApp"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            <span>Send Receipt & 5★ Review</span>
+          </button>
+        )}
+
+        {onShareWhatsAppCard && (
+          <button
+            type="button"
+            onClick={onShareWhatsAppCard}
+            className="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 font-bold text-xs px-2.5 py-1.5 rounded-md shadow-2xs transition-colors cursor-pointer"
+            title="Send Service Card / Pamphlet to customer on WhatsApp (100% Free)"
+          >
+            <Share2 className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Visiting Card</span>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={onDirectPrint}
