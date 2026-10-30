@@ -105,7 +105,7 @@ export const GoogleReviewsCounterStand: React.FC<GoogleReviewsCounterStandProps>
                   Authorized Multi-Courier & Logistics Service Center
                 </p>
                 <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-100 border border-slate-300 text-[10.5px] font-bold text-slate-700 mt-1">
-                  <span>DTDC • BLUE DART • DELHIVERY • SPEED POST</span>
+                  <span>TRACKON • SHREE MARUTI • DELHIVERY • DTDC • BLUE DART</span>
                 </div>
               </div>
             </div>

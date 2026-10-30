@@ -5,6 +5,8 @@ import {
 } from '../../types/courierPrint';
 import { getEnvelopeDimensionsMm, formatCityStatePin, generateBarcodeDataUrl } from '../../utils/envelopePdfExport';
 import { toUpperClean } from '../../utils/indianPostalData';
+import { CourierA4SlipLayout } from './CourierA4SlipLayout';
+import { A4ThreeSlipSheet } from './A4ThreeSlipSheet';
 
 interface PrintMountProps {
   to: CourierAddress;
@@ -98,6 +100,29 @@ export const PrintMount: React.FC<PrintMountProps> = ({
           const barcodeDataUrl = settings.showBarcode && settings.barcodeValue
             ? generateBarcodeDataUrl(settings.barcodeValue)
             : null;
+
+          if (settings.preset === 'A4_3_SLIPS' || settings.preset === 'A4_COURIER_SLIP') {
+            return (
+              <div
+                key={rec.id || `envelope-page-${idx}`}
+                className="envelope-page relative bg-white text-black box-border select-none"
+                style={{
+                  width: '210mm',
+                  height: '297mm',
+                  minWidth: '210mm',
+                  minHeight: '297mm',
+                  fontFamily: 'Segoe UI, Arial, sans-serif',
+                }}
+              >
+                <A4ThreeSlipSheet
+                  to={rec}
+                  from={from}
+                  settings={settings}
+                  isPrintView={true}
+                />
+              </div>
+            );
+          }
 
           return (
             <div

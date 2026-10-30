@@ -1,6 +1,6 @@
 {
-  "name": "DTDC Bill Generator",
-  "description": "Multi-courier Windows 11 bill generator and 4-up A4 shipping label printing system supporting DTDC, Blue Dart, and Delhivery with Snipping Tool paste, multi-page PDF splitting, A4 2x2 grid layout, and print-ready export.",
+  "name": "MSE Bill Generator",
+  "description": "MSE (Maa Sharda Enterprises) Multi-courier Bill Generator, A4 Paper-Save address label studio, and consignment dispatch system supporting DTDC, Blue Dart, and Delhivery.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

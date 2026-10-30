@@ -4,6 +4,8 @@ export type EnvelopePresetType =
   | 'C5'
   | 'C4'
   | 'A4'
+  | 'A4_3_SLIPS'
+  | 'A4_COURIER_SLIP'
   | 'CUSTOM'
   | 'A4_LABELS_2'
   | 'A4_LABELS_4'
@@ -75,6 +77,8 @@ export interface CourierPrintSettings {
   senderPrefix: string; // "FROM:"
   receiverPrefix: string; // "TO:"
   includePhoneIcon: boolean;
+  paperSaveMode?: boolean;
+  printMargin?: 'normal' | 'relaxed' | 'compact';
   theme: 'light' | 'dark' | 'system';
   language: 'en' | 'hi';
 }

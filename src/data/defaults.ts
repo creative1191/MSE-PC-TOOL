@@ -14,7 +14,7 @@ export const INITIAL_BILL_DATA: DTDCBillData = {
   consignorPhone: '0000000000',
   consignorGstin: '',
   consignorEmail: '',
-  senderDepot: 'SATNA DEPOT (MP)',
+  senderDepot: 'NAGOD / SATNA DEPOT (MP)',
 
   customerRefNo: '',
   consigneeName: 'Mantra softech india pvt ltd',
@@ -33,7 +33,7 @@ export const INITIAL_BILL_DATA: DTDCBillData = {
   chargedWeight: '0.23 Kgs',
 
   bookingBranchName: 'MAA SHARDA ENTERPRISES',
-  bookingBranchAddress: 'NEAR REST HOUSE, NAGOD, SATNA, MADHYA PRADESH 485446',
+  bookingBranchAddress: 'NEAR REST HOUSE, SATNA-PANNA ROAD, NH39, NAGOD 485446 (MP)',
   bookingBranchPhone: '8982091190',
   remark: '',
 

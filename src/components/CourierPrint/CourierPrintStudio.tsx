@@ -44,6 +44,7 @@ import {
   Sparkles,
   Share2,
   Star,
+  Leaf,
 } from 'lucide-react';
 
 export const CourierPrintStudio: React.FC = () => {
@@ -70,52 +71,41 @@ export const CourierPrintStudio: React.FC = () => {
   const [settings, setSettings] = useState<CourierPrintSettings>(() => {
     try {
       const saved = localStorage.getItem('courierprint_settings_v1');
-      return saved
-        ? JSON.parse(saved)
-        : {
-            preset: 'DL',
-            customWidthMm: 220,
-            customHeightMm: 110,
-            orientation: 'LANDSCAPE',
-            fromPosition: 'BOTTOM_RIGHT',
-            marginPreset: 'NORMAL',
-            customMarginMm: 12,
-            typography: 'SEGOE',
-            fontScale: 1.0,
-            boldNames: true,
-            boxedContainers: false,
-            showBarcode: true,
-            barcodeValue: 'CP94820148IN',
-            postalBadge: 'SPEED_POST',
-            senderPrefix: 'FROM:',
-            receiverPrefix: 'TO:',
-            includePhoneIcon: true,
-            theme: 'light',
-            language: 'en',
-          };
-    } catch {
-      return {
-        preset: 'DL',
-        customWidthMm: 220,
-        customHeightMm: 110,
-        orientation: 'LANDSCAPE',
-        fromPosition: 'BOTTOM_RIGHT',
-        marginPreset: 'NORMAL',
-        customMarginMm: 12,
-        typography: 'SEGOE',
-        fontScale: 1.0,
-        boldNames: true,
-        boxedContainers: false,
-        showBarcode: true,
-        barcodeValue: 'CP94820148IN',
-        postalBadge: 'SPEED_POST',
-        senderPrefix: 'FROM:',
-        receiverPrefix: 'TO:',
-        includePhoneIcon: true,
-        theme: 'light',
-        language: 'en',
-      };
-    }
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Clear dummy Indian Post defaults if loaded from previous session
+        if (parsed.postalBadge === 'SPEED_POST') {
+          parsed.postalBadge = 'NONE';
+        }
+        if (parsed.barcodeValue === 'CP94820148IN') {
+          parsed.showBarcode = false;
+          parsed.barcodeValue = '';
+        }
+        return parsed;
+      }
+    } catch {}
+
+    return {
+      preset: 'DL',
+      customWidthMm: 220,
+      customHeightMm: 110,
+      orientation: 'LANDSCAPE',
+      fromPosition: 'BOTTOM_RIGHT',
+      marginPreset: 'NORMAL',
+      customMarginMm: 12,
+      typography: 'SEGOE',
+      fontScale: 1.0,
+      boldNames: true,
+      boxedContainers: false,
+      showBarcode: false,
+      barcodeValue: '',
+      postalBadge: 'NONE',
+      senderPrefix: 'FROM:',
+      receiverPrefix: 'TO:',
+      includePhoneIcon: true,
+      theme: 'light',
+      language: 'en',
+    };
   });
 
   // Zoom control: 60% to 160%
@@ -228,6 +218,24 @@ export const CourierPrintStudio: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          {(settings.preset === 'A4_3_SLIPS' || settings.preset === 'A4_COURIER_SLIP') && (
+            <button
+              type="button"
+              onClick={() =>
+                setSettings((prev) => ({ ...prev, paperSaveMode: !prev.paperSaveMode }))
+              }
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer shadow-2xs ${
+                settings.paperSaveMode
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700 ring-2 ring-emerald-300'
+                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border-emerald-300'
+              }`}
+              title="Paper Save Mode: When ON, only Top Copy 1 is printed and remaining 2/3 of A4 sheet is saved blank"
+            >
+              <Leaf className={`w-3.5 h-3.5 ${settings.paperSaveMode ? 'text-white' : 'text-emerald-600'}`} />
+              <span>Paper Save: {settings.paperSaveMode ? 'ON (1 Copy)' : 'OFF (3 Copies)'}</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setShowBulkMode(true)}
@@ -345,6 +353,57 @@ export const CourierPrintStudio: React.FC = () => {
               </select>
             </div>
 
+            {/* Dedicated A4 3-Slip Controls (Paper Save & 9mm/13mm/5mm Margins) */}
+            {(settings.preset === 'A4_3_SLIPS' || settings.preset === 'A4_COURIER_SLIP') && (
+              <div className="p-3 bg-linear-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/60 dark:to-teal-950/60 border-2 border-emerald-400 dark:border-emerald-700 rounded-xl space-y-2.5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-950 dark:text-emerald-200">
+                    <Leaf className="w-4 h-4 text-emerald-600" />
+                    <span>A4 Paper Save Mode:</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSettings((prev) => ({ ...prev, paperSaveMode: !prev.paperSaveMode }))
+                    }
+                    className={`px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer shadow-2xs ${
+                      settings.paperSaveMode
+                        ? 'bg-emerald-600 text-white border-emerald-700 ring-2 ring-emerald-300'
+                        : 'bg-white dark:bg-slate-800 text-emerald-900 dark:text-emerald-200 border-emerald-300 hover:bg-emerald-100'
+                    }`}
+                  >
+                    {settings.paperSaveMode ? 'ON (1 Copy at Top)' : 'OFF (3 Full Copies)'}
+                  </button>
+                </div>
+                <p className="text-[10.5px] text-emerald-800 dark:text-emerald-300 leading-tight">
+                  {settings.paperSaveMode
+                    ? '🌱 Sirf upar wali 1 dispatch slip print hogi, baaki 67% A4 paper bilkul blank bacha rahega.'
+                    : '📋 Pure A4 sheet par 3 dispatch slips (Copy 1, Copy 2, Copy 3) cut-lines ke sath print hongi.'}
+                </p>
+
+                {/* Print Margins: Normal (9mm), Relaxed (13mm), Compact (5mm) */}
+                <div className="pt-2 border-t border-emerald-200 dark:border-emerald-800 flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-emerald-950 dark:text-emerald-200">Print Margins:</span>
+                  <div className="flex items-center gap-1">
+                    {(['normal', 'relaxed', 'compact'] as const).map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setSettings((prev) => ({ ...prev, printMargin: m }))}
+                        className={`px-2 py-0.5 rounded text-[10.5px] cursor-pointer transition-colors ${
+                          (settings.printMargin || 'normal') === m
+                            ? 'bg-emerald-700 text-white font-bold shadow-2xs'
+                            : 'bg-white dark:bg-slate-800 text-emerald-800 dark:text-emerald-300 border border-emerald-300 hover:bg-emerald-100'
+                        }`}
+                      >
+                        {m === 'normal' ? 'Normal (9mm)' : m === 'relaxed' ? 'Relaxed (13mm)' : 'Compact (5mm)'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Custom Dimensions if CUSTOM selected */}
             {settings.preset === 'CUSTOM' && (
               <div className="grid grid-cols-2 gap-2 p-2 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -373,145 +432,154 @@ export const CourierPrintStudio: React.FC = () => {
               </div>
             )}
 
-            {/* Orientation & Margins */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[10.5px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
-                  ORIENTATION
-                </label>
-                <div className="grid grid-cols-2 gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setSettings({ ...settings, orientation: 'LANDSCAPE' })}
-                    className={`py-1.5 text-xs font-semibold rounded border transition-colors cursor-pointer ${
-                      settings.orientation === 'LANDSCAPE'
-                        ? 'bg-blue-600 text-white border-blue-600 font-bold'
-                        : 'border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    Landscape
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSettings({ ...settings, orientation: 'PORTRAIT' })}
-                    className={`py-1.5 text-xs font-semibold rounded border transition-colors cursor-pointer ${
-                      settings.orientation === 'PORTRAIT'
-                        ? 'bg-blue-600 text-white border-blue-600 font-bold'
-                        : 'border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    Portrait
-                  </button>
-                </div>
-              </div>
+            {/* Envelope-Specific Controls (Hidden in A4 3-Slip mode to keep UI clean and uncluttered) */}
+            {settings.preset !== 'A4_3_SLIPS' && (
+              <>
+                {/* Orientation & Margins */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10.5px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
+                      ORIENTATION
+                    </label>
+                    <div className="grid grid-cols-2 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setSettings({ ...settings, orientation: 'LANDSCAPE' })}
+                        className={`py-1.5 text-xs font-semibold rounded border transition-colors cursor-pointer ${
+                          settings.orientation === 'LANDSCAPE'
+                            ? 'bg-blue-600 text-white border-blue-600 font-bold'
+                            : 'border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        Landscape
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSettings({ ...settings, orientation: 'PORTRAIT' })}
+                        className={`py-1.5 text-xs font-semibold rounded border transition-colors cursor-pointer ${
+                          settings.orientation === 'PORTRAIT'
+                            ? 'bg-blue-600 text-white border-blue-600 font-bold'
+                            : 'border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        Portrait
+                      </button>
+                    </div>
+                  </div>
 
-              <div>
-                <label className="block text-[10.5px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
-                  MARGINS
-                </label>
-                <select
-                  value={settings.marginPreset}
-                  onChange={(e) =>
-                    setSettings({ ...settings, marginPreset: e.target.value as any })
-                  }
-                  className="w-full text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                >
-                  <option value="COMPACT">Compact (8 mm)</option>
-                  <option value="NORMAL">Normal (12 mm)</option>
-                  <option value="WIDE">Wide (18 mm)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Font Scale & Typography */}
-            <div className="grid grid-cols-2 gap-2 items-center">
-              <div>
-                <label className="block text-[10.5px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
-                  FONT SCALE: {Math.round(settings.fontScale * 100)}%
-                </label>
-                <input
-                  type="range"
-                  min="0.8"
-                  max="1.3"
-                  step="0.05"
-                  value={settings.fontScale}
-                  onChange={(e) =>
-                    setSettings({ ...settings, fontScale: parseFloat(e.target.value) })
-                  }
-                  className="w-full accent-blue-600"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10.5px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
-                  FROM POSITION
-                </label>
-                <select
-                  value={settings.fromPosition}
-                  onChange={(e) =>
-                    setSettings({ ...settings, fromPosition: e.target.value as any })
-                  }
-                  className="w-full text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold"
-                >
-                  <option value="BOTTOM_RIGHT">Bottom-Right (Standard)</option>
-                  <option value="BOTTOM_LEFT">Bottom-Left</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Postal Badge & Barcode */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[10.5px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
-                  POSTAL BADGE
-                </label>
-                <select
-                  value={settings.postalBadge}
-                  onChange={(e) =>
-                    setSettings({ ...settings, postalBadge: e.target.value as PostalBadgeType })
-                  }
-                  className="w-full text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
-                >
-                  <option value="NONE">None</option>
-                  <option value="SPEED_POST">Speed Post</option>
-                  <option value="REGISTERED_POST">Registered Post</option>
-                  <option value="BOOK_POST">Book Post</option>
-                  <option value="FRAGILE">Fragile / Care</option>
-                  <option value="CASH_ON_DELIVERY">Cash on Delivery (COD)</option>
-                  <option value="AIRMAIL">By Air Mail</option>
-                  <option value="EXPRESS_PARCEL">Express Parcel</option>
-                  <option value="DOCUMENT">Documents Only</option>
-                </select>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-0.5">
-                  <label className="text-[10.5px] font-bold text-slate-600 dark:text-slate-400">
-                    BARCODE / AWB
-                  </label>
-                  <label className="text-[10px] text-blue-600 flex items-center gap-1 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settings.showBarcode}
+                  <div>
+                    <label className="block text-[10.5px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
+                      MARGINS
+                    </label>
+                    <select
+                      value={settings.marginPreset}
                       onChange={(e) =>
-                        setSettings({ ...settings, showBarcode: e.target.checked })
+                        setSettings({ ...settings, marginPreset: e.target.value as any })
                       }
-                      className="rounded accent-blue-600"
-                    />
-                    <span>Show</span>
-                  </label>
+                      className="w-full text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    >
+                      <option value="COMPACT">Compact (8 mm)</option>
+                      <option value="NORMAL">Normal (12 mm)</option>
+                      <option value="WIDE">Wide (18 mm)</option>
+                    </select>
+                  </div>
                 </div>
-                <input
-                  type="text"
-                  disabled={!settings.showBarcode}
-                  value={settings.barcodeValue}
-                  onChange={(e) =>
-                    setSettings({ ...settings, barcodeValue: toUpperClean(e.target.value) })
-                  }
-                  placeholder="AWB12345678IN"
-                  className="w-full uppercase font-mono text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 disabled:opacity-50"
-                />
+
+                {/* From Position */}
+                <div>
+                  <label className="block text-[10.5px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
+                    FROM POSITION
+                  </label>
+                  <select
+                    value={settings.fromPosition}
+                    onChange={(e) =>
+                      setSettings({ ...settings, fromPosition: e.target.value as any })
+                    }
+                    className="w-full text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-semibold"
+                  >
+                    <option value="BOTTOM_RIGHT">Bottom-Right (Standard)</option>
+                    <option value="BOTTOM_LEFT">Bottom-Left</option>
+                  </select>
+                </div>
+
+                {/* Postal Badge & Barcode */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10.5px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
+                      POSTAL BADGE
+                    </label>
+                    <select
+                      value={settings.postalBadge}
+                      onChange={(e) =>
+                        setSettings({ ...settings, postalBadge: e.target.value as PostalBadgeType })
+                      }
+                      className="w-full text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    >
+                      <option value="NONE">None</option>
+                      <option value="SPEED_POST">Speed Post</option>
+                      <option value="REGISTERED_POST">Registered Post</option>
+                      <option value="BOOK_POST">Book Post</option>
+                      <option value="FRAGILE">Fragile / Care</option>
+                      <option value="CASH_ON_DELIVERY">Cash on Delivery (COD)</option>
+                      <option value="AIRMAIL">By Air Mail</option>
+                      <option value="EXPRESS_PARCEL">Express Parcel</option>
+                      <option value="DOCUMENT">Documents Only</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[10.5px] font-bold text-slate-600 dark:text-slate-400">
+                        BARCODE / AWB
+                      </label>
+                      <label className="text-[10px] text-blue-600 flex items-center gap-1 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={settings.showBarcode}
+                          onChange={(e) =>
+                            setSettings({ ...settings, showBarcode: e.target.checked })
+                          }
+                          className="rounded accent-blue-600"
+                        />
+                        <span>Show</span>
+                      </label>
+                    </div>
+                    <input
+                      type="text"
+                      disabled={!settings.showBarcode}
+                      value={settings.barcodeValue}
+                      onChange={(e) =>
+                        setSettings({ ...settings, barcodeValue: toUpperClean(e.target.value) })
+                      }
+                      placeholder="AWB / Barcode"
+                      className="w-full uppercase font-mono text-xs p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 disabled:opacity-50"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Font Scale Control (Available in all presets) */}
+            <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                  TEXT SIZE / FONT SCALE
+                </label>
+                <span className="text-[10.5px] font-mono font-bold text-blue-600">
+                  {Math.round(settings.fontScale * 100)}%
+                </span>
               </div>
+              <input
+                type="range"
+                min="0.8"
+                max="1.3"
+                step="0.05"
+                value={settings.fontScale}
+                onChange={(e) =>
+                  setSettings({ ...settings, fontScale: parseFloat(e.target.value) })
+                }
+                className="w-full accent-blue-600 cursor-pointer"
+              />
             </div>
 
             {/* Extra Toggles */}
@@ -687,7 +755,7 @@ export const CourierPrintStudio: React.FC = () => {
           billData={{
             ...INITIAL_BILL_DATA,
             courier: 'DTDC',
-            awb: settings.barcodeValue || 'CP94820148IN',
+            awb: settings.barcodeValue || '',
             consignorName: from.name,
             consignorPhone: from.mobile || '',
             consignorAddress: [from.company, from.addressLine1, from.addressLine2, from.landmark, `${from.city}, ${from.state} - ${from.pinCode}`].filter(Boolean).join(', '),

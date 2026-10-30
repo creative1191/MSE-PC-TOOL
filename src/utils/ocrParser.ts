@@ -78,10 +78,16 @@ export function cleanAddressString(rawAddress?: string, nameToStrip?: string): s
 }
 
 /**
- * Detects which courier (DTDC, BLUEDART, or DELHIVERY) a raw text / document belongs to.
+ * Detects which courier (TRACKON, SHREEMARUTI, DELHIVERY, DTDC, or BLUEDART) a raw text / document belongs to.
  */
 export function detectCourierFromText(rawText: string): CourierType | null {
   const upper = rawText.toUpperCase();
+  if (upper.includes('TRACKON') || upper.includes('PRIME TRACK')) {
+    return 'TRACKON';
+  }
+  if (upper.includes('SHREE MARUTI') || upper.includes('MARUTI COURIER') || upper.includes('SMC LOGISTICS')) {
+    return 'SHREEMARUTI';
+  }
   if (upper.includes('BLUE DART') || upper.includes('BLUEDART') || upper.includes('AIR WAYBILL') || upper.includes('WBN') || upper.includes('APEX')) {
     return 'BLUEDART';
   }

@@ -49,12 +49,12 @@ export const ServiceCardModal: React.FC<ServiceCardModalProps> = ({
 
   // Services offered checklist
   const [selectedServices, setSelectedServices] = useState<string[]>([
+    'Trackon Couriers (Prime Track / Air / Surface)',
+    'Shree Maruti Courier (Fast Express & Cargo)',
+    'Delhivery Express Parcel',
     'DTDC Express (Air & Surface)',
     'Blue Dart Priority Delivery',
-    'Delhivery Express Parcel',
-    'Speed Post & Register Post',
     'Free Doorstep Parcel Pickup',
-    'Pan-India & International Cargo',
   ]);
 
   const [businessTimings, setBusinessTimings] = useState<string>('Mon - Sat: 9:00 AM - 9:00 PM');
@@ -284,10 +284,11 @@ export const ServiceCardModal: React.FC<ServiceCardModalProps> = ({
 
                   {/* Multi-Courier Partner Badges */}
                   <div className="bg-white/10 backdrop-blur-md rounded-xl p-2 flex items-center justify-around gap-1 border border-white/10">
+                    <span className="text-[9px] font-bold text-white px-1.5 py-0.5 rounded bg-rose-700">TRACKON</span>
+                    <span className="text-[9px] font-bold text-white px-1.5 py-0.5 rounded bg-emerald-700">SHREE MARUTI</span>
+                    <span className="text-[9px] font-bold text-white px-1.5 py-0.5 rounded bg-red-700/80">DELHIVERY</span>
                     <span className="text-[9px] font-bold text-white px-1.5 py-0.5 rounded bg-red-600/80">DTDC</span>
                     <span className="text-[9px] font-bold text-white px-1.5 py-0.5 rounded bg-blue-600/80">BLUE DART</span>
-                    <span className="text-[9px] font-bold text-white px-1.5 py-0.5 rounded bg-red-700/80">DELHIVERY</span>
-                    <span className="text-[9px] font-bold text-white px-1.5 py-0.5 rounded bg-amber-600/80">SPEED POST</span>
                   </div>
 
                   {/* Address & Contact Details */}
@@ -398,12 +399,12 @@ export const ServiceCardModal: React.FC<ServiceCardModalProps> = ({
 
               <div className="grid grid-cols-2 gap-1.5 text-xs">
                 {[
+                  'Trackon Couriers (Prime Track / Air / Surface)',
+                  'Shree Maruti Courier (Fast Express & Cargo)',
+                  'Delhivery Express Parcel',
                   'DTDC Express (Air & Surface)',
                   'Blue Dart Priority Delivery',
-                  'Delhivery Express Parcel',
-                  'Speed Post & Register Post',
                   'Free Doorstep Parcel Pickup',
-                  'Pan-India & International Cargo',
                 ].map((service) => {
                   const isChecked = selectedServices.includes(service);
                   return (

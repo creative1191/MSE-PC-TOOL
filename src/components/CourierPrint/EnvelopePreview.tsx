@@ -8,6 +8,8 @@ import {
 import { ENVELOPE_PRESETS, toUpperClean } from '../../utils/indianPostalData';
 import { BarcodeRenderer } from '../BarcodeRenderer';
 import { Phone } from 'lucide-react';
+import { CourierA4SlipLayout } from './CourierA4SlipLayout';
+import { A4ThreeSlipSheet } from './A4ThreeSlipSheet';
 
 interface EnvelopePreviewProps {
   to: CourierAddress;
@@ -74,6 +76,41 @@ export const EnvelopePreview: React.FC<EnvelopePreviewProps> = ({
     : fromCityState || from.pinCode || '';
 
   const isFromRight = settings.fromPosition === 'BOTTOM_RIGHT';
+
+  if (settings.preset === 'A4_3_SLIPS' || settings.preset === 'A4_COURIER_SLIP') {
+    return (
+      <div className="flex flex-col items-center justify-center p-2 sm:p-4 select-none">
+        <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-2">
+          <span className="font-semibold text-slate-800 dark:text-slate-200">
+            A4 3-Slip Dispatch Sheet (Normal Paper)
+          </span>
+          <span>•</span>
+          <span>210 mm × 297 mm (A4 Portrait)</span>
+          <span>•</span>
+          <span className="bg-blue-100 text-blue-900 font-bold px-2 py-0.5 rounded text-[10px]">
+            {settings.paperSaveMode ? '🌱 Paper Save Mode (1 Copy at Top)' : '📋 3 Copies (Full Sheet)'}
+          </span>
+        </div>
+
+        <div
+          className="transition-transform duration-150 origin-top flex items-center justify-center"
+          style={{ transform: `scale(${zoomPercent / 100})` }}
+        >
+          <div
+            id="courierprint-active-envelope"
+            className="shadow-2xl border border-slate-300 dark:border-slate-700 rounded-sm overflow-hidden"
+          >
+            <A4ThreeSlipSheet
+              to={to}
+              from={from}
+              settings={settings}
+              isPrintView={false}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center p-2 sm:p-4 select-none">

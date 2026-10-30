@@ -39,7 +39,9 @@ export const BillExportBar: React.FC<BillExportBarProps> = React.memo(({
         <span className="text-xs font-mono font-semibold text-blue-900 bg-blue-50 px-2 py-0.5 rounded">
           {currentConfig.shortName} —{' '}
           {billData.layoutMode === '3_COPIES_PORTRAIT'
-            ? 'A4 Portrait (3 Copies)'
+            ? billData.paperSaveMode
+              ? 'A4 Paper Save Mode (1 Copy at Top)'
+              : 'A4 Portrait (3 Copies)'
             : 'A4 Landscape (Single Page)'}
         </span>
 

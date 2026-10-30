@@ -77,6 +77,11 @@ function renderEnvelopeOnPdf(
   widthMm: number,
   heightMm: number
 ) {
+  if (settings.preset === 'A4_3_SLIPS' || settings.preset === 'A4_COURIER_SLIP') {
+    renderA4ThreeSlipsOnPdf(doc, to, from, settings);
+    return;
+  }
+
   let mX = 12;
   let mY = 10;
   if (settings.marginPreset === 'COMPACT') {
@@ -229,6 +234,175 @@ function renderEnvelopeOnPdf(
     doc.setFontSize(8 * scale);
     doc.text(`MOB: ${from.mobile}`, fromBoxX, fromY);
   }
+}
+
+function renderA4ThreeSlipsOnPdf(
+  doc: jsPDF,
+  to: CourierAddress,
+  from: CourierAddress,
+  settings: CourierPrintSettings
+) {
+  // A4 Page background (210 x 297 mm)
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, 210, 297, 'F');
+
+  const marginPreset = settings.printMargin || 'normal';
+  const paddingYMm = marginPreset === 'relaxed' ? 13 : marginPreset === 'compact' ? 5 : 9;
+  const paddingXMm = marginPreset === 'relaxed' ? 12 : marginPreset === 'compact' ? 7 : 10;
+
+  const boxW = 210 - (paddingXMm * 2);
+  const slipH = 88;
+  const paperSave = Boolean(settings.paperSaveMode);
+
+  const copies = [
+    { num: 1, label: 'Copy 1' },
+    { num: 2, label: 'Copy 2' },
+    { num: 3, label: 'Copy 3' },
+  ];
+
+  const toCityState = [to.city, to.state].filter(Boolean).map(toUpperClean).join(', ');
+  const toCityPin = toCityState && to.pinCode ? `${toCityState} - ${to.pinCode}` : toCityState || to.pinCode || '';
+
+  const fromCityState = [from.city, from.state].filter(Boolean).map(toUpperClean).join(', ');
+  const fromCityPin = fromCityState && from.pinCode ? `${fromCityState} - ${from.pinCode}` : fromCityState || from.pinCode || '';
+
+  copies.forEach((copy, idx) => {
+    if (paperSave && copy.num > 1) {
+      return; // Skip drawing on bottom 2/3 in Paper Save Mode
+    }
+
+    const slipY = paddingYMm + (idx * 93);
+
+    // Cut line between copies
+    if (idx > 0) {
+      (doc as any).setLineDashPattern?.([2, 2], 0);
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.2);
+      const cutY = slipY - 3;
+      doc.line(paddingXMm, cutY, paddingXMm + boxW, cutY);
+      doc.setFontSize(6.5);
+      doc.setTextColor(140, 140, 140);
+      doc.text('✂ - - - - - - - - - - - - - CUT HERE FOR PARCEL DISPATCH - - - - - - - - - - - - - ✂', 105, cutY - 1, { align: 'center' });
+      (doc as any).setLineDashPattern?.([], 0);
+    }
+
+    // Optional border if boxedContainers is enabled
+    if (settings.boxedContainers) {
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.3);
+      doc.rect(paddingXMm, slipY, boxW, slipH);
+    }
+
+    // ================= TOP LEFT: TO (RECIPIENT) =================
+    const toX = paddingXMm + 2;
+    let curToY = slipY + 5;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    doc.text(settings.receiverPrefix || 'TO:', toX, curToY);
+    curToY += 4.5;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.text(to.name ? toUpperClean(to.name) : 'RECIPIENT NAME', toX, curToY);
+    curToY += 4.2;
+
+    if (to.company) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(30, 30, 30);
+      doc.text(toUpperClean(to.company), toX, curToY);
+      curToY += 3.8;
+    }
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(30, 30, 30);
+    if (to.addressLine1) {
+      const split1 = doc.splitTextToSize(toUpperClean(to.addressLine1), 125);
+      doc.text(split1, toX, curToY);
+      curToY += split1.length * 3.3;
+    }
+    if (to.addressLine2) {
+      const split2 = doc.splitTextToSize(toUpperClean(to.addressLine2), 125);
+      doc.text(split2, toX, curToY);
+      curToY += split2.length * 3.3;
+    }
+    if (to.landmark) {
+      doc.setFont('helvetica', 'italic');
+      doc.text(`LANDMARK: ${toUpperClean(to.landmark)}`, toX, curToY);
+      curToY += 3.5;
+    }
+
+    curToY += 1;
+    if (toCityPin) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(0, 0, 0);
+      doc.text(toCityPin, toX, curToY);
+      curToY += 4;
+    }
+
+    if (to.mobile) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.text(`MOBILE: ${to.mobile}`, toX, curToY);
+    }
+
+    // ================= BOTTOM RIGHT: FROM (SENDER) =================
+    const fromX = paddingXMm + boxW - 85;
+    const fromBottomY = slipY + slipH - 2;
+    let curFromY = fromBottomY - 24;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(0, 0, 0);
+    doc.text(settings.senderPrefix || 'FROM:', fromX, curFromY);
+    curFromY += 4;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.text(toUpperClean(from.name || 'MAA SHARDA ENTERPRISES'), fromX, curFromY);
+    curFromY += 3.8;
+
+    if (from.company) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(50, 50, 50);
+      doc.text(toUpperClean(from.company), fromX, curFromY);
+      curFromY += 3.2;
+    }
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(50, 50, 50);
+    if (from.addressLine1) {
+      const splitFrom1 = doc.splitTextToSize(toUpperClean(from.addressLine1), 85);
+      doc.text(splitFrom1, fromX, curFromY);
+      curFromY += splitFrom1.length * 3.0;
+    }
+    if (from.addressLine2) {
+      const splitFrom2 = doc.splitTextToSize(toUpperClean(from.addressLine2), 85);
+      doc.text(splitFrom2, fromX, curFromY);
+      curFromY += splitFrom2.length * 3.0;
+    }
+
+    if (fromCityPin) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(0, 0, 0);
+      doc.text(fromCityPin, fromX, curFromY);
+      curFromY += 3.5;
+    }
+
+    if (from.mobile) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.text(`MOB: ${from.mobile}`, fromX, curFromY);
+    }
+  });
 }
 
 function renderPostalBadgeOnPdf(

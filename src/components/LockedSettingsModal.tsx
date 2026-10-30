@@ -84,7 +84,7 @@ export const LockedSettingsModal: React.FC<LockedSettingsModalProps> = ({
             </div>
             <div>
               <h2 className="font-bold text-sm">System & Google Business Settings</h2>
-              <p className="text-[11px] text-blue-200">Strict DTDC Rules + 2 Google Maps Profiles Configuration</p>
+              <p className="text-[11px] text-blue-200">MSE Bill Generator & Courier Settings + 2 Google Business Profiles</p>
             </div>
           </div>
           <button

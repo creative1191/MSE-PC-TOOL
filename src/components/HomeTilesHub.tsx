@@ -28,9 +28,11 @@ import { DEFAULT_SENDER } from '../utils/indianPostalData';
 export type AppActiveTab =
   | 'home'
   | 'courier-print'
+  | 'trackon-generator'
+  | 'shreemaruti-generator'
+  | 'delhivery-generator'
   | 'dtdc-generator'
   | 'bluedart-generator'
-  | 'delhivery-generator'
   | 'label-printing'
   | 'address-book'
   | 'print-history'
@@ -201,10 +203,10 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
 
               <div>
                 <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                  Envelope Studio
+                  Envelope & 3-Slip Studio
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                  Print true physical scale addresses on <strong>DL, C6, C5, C4, A4 & Custom envelopes</strong>. Wide top TO box, bottom-right FROM, inline PIN code, and offline OCR.
+                  Print true physical scale addresses on <strong>DL, C6, C5, C4 envelopes</strong> or <strong>A4 3-Slip side-by-side sheets</strong> on normal paper with Paper Save mode.
                 </p>
               </div>
             </div>
@@ -226,22 +228,22 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                   <FileSpreadsheet className="w-6 h-6 stroke-[2.2]" />
                 </div>
                 <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-mono tracking-wider uppercase">
-                  DTDC • BD • DEL
+                  5 COURIER PARTNERS
                 </span>
               </div>
 
               <div>
                 <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                  Quick Invoice Generator
+                  MSE Bill Generator
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                  Official <strong>3-copy consignment receipts</strong> (Sender, Consignee, P.O.D.) with cut lines, automated Code 128 barcodes, landscape mode, and Snipping Tool scan.
+                  Official <strong>3-copy courier bills & A4 paper save address slips</strong> for Trackon, Shree Maruti, Delhivery, DTDC & Blue Dart with Code 128 barcodes, cut lines, and OCR scan.
                 </p>
               </div>
             </div>
 
             <div className="pt-4 mt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs font-bold text-emerald-600 dark:text-emerald-400">
-              <span>Create Courier Bill</span>
+              <span>Launch MSE Bill Generator</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
             </div>
           </div>

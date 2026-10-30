@@ -85,9 +85,75 @@ export const COURIER_CONFIGS: Record<CourierType, CourierConfig> = {
     themeColor: '#1A1A1A', // Dark Charcoal
     accentColor: '#EE3124', // Signature Red
   },
+  TRACKON: {
+    id: 'TRACKON',
+    name: 'Trackon Couriers',
+    shortName: 'Trackon',
+    fullName: 'Trackon Couriers Pvt. Ltd.',
+    companyName: 'Trackon Couriers Pvt. Ltd.',
+    regdOfficeLine1: 'A-64, Naraina Industrial Area, Phase-I',
+    regdOfficeLine2: 'New Delhi - 110028',
+    website: 'www.trackon.in',
+    supportEmail: 'customercare@trackon.in',
+    supportPhone: '011-45593500',
+    docTitle: 'CONSIGNMENT NOTE / WAYBILL',
+    defaultProducts: [
+      'PRIME TRACK',
+      'AIR EXPRESS',
+      'SURFACE EXPRESS',
+      'SURFACE CARGO',
+      'STANDARD PARCEL',
+    ],
+    awbPrefix: '51',
+    awbLabel: 'Consignment No',
+    termsStatement:
+      'I have read and understood terms & conditions of carriage mentioned on website www.trackon.in, and I agree to the same.',
+    footerNotice:
+      'THIS DOCUMENT IS NOT A TAX INVOICE. WEIGHT CAPTURED BY TRACKON WILL BE USED FOR INVOICE GENERATION.',
+    themeColor: '#C8102E', // Crimson Red
+    accentColor: '#002B49', // Deep Navy
+  },
+  SHREEMARUTI: {
+    id: 'SHREEMARUTI',
+    name: 'Shree Maruti Courier',
+    shortName: 'Shree Maruti',
+    fullName: 'Shree Maruti Integrated Logistics Ltd.',
+    companyName: 'Shree Maruti Integrated Logistics Ltd.',
+    regdOfficeLine1: 'Maruti House, Opp. Air Force Station',
+    regdOfficeLine2: 'Airport Road, Rajkot, Gujarat - 360001',
+    website: 'www.shreemaruticourier.com',
+    supportEmail: 'customercare@shreemaruticourier.com',
+    supportPhone: '1800 233 6666',
+    docTitle: 'CONSIGNMENT NOTE / DOCKET',
+    defaultProducts: [
+      'DOMESTIC EXPRESS',
+      'AIR CARGO',
+      'SURFACE CARGO',
+      'SMC PRIORITY',
+      'SAME DAY DELIVERY',
+    ],
+    awbPrefix: '12',
+    awbLabel: 'Docket No',
+    termsStatement:
+      'I have read and understood terms & conditions of carriage mentioned on website www.shreemaruticourier.com, and I agree to the same.',
+    footerNotice:
+      'THIS DOCUMENT IS NOT A TAX INVOICE. WEIGHT CAPTURED BY SHREE MARUTI WILL BE USED FOR INVOICE GENERATION.',
+    themeColor: '#007A3D', // Emerald Green
+    accentColor: '#D97706', // Amber Gold
+  },
 };
 
 export const generateAwbNumber = (courier: CourierType): string => {
+  if (courier === 'TRACKON') {
+    // Trackon 10-digit consignment number (starts with 51, 30, or 42)
+    const p = Math.random() > 0.5 ? '51' : '30';
+    return `${p}${Math.floor(10000000 + Math.random() * 90000000)}`;
+  }
+  if (courier === 'SHREEMARUTI') {
+    // Shree Maruti 10-digit docket number (starts with 12 or 80)
+    const p = Math.random() > 0.5 ? '12' : '80';
+    return `${p}${Math.floor(10000000 + Math.random() * 90000000)}`;
+  }
   if (courier === 'BLUEDART') {
     // Blue Dart standard 9 or 11-digit numeric waybills (starts with 82 or 71)
     return `82${Math.floor(10000000 + Math.random() * 90000000)}`;
@@ -273,6 +339,122 @@ export const COURIER_PRESETS: Record<CourierType, PresetLabel[]> = {
         chargedWeight: '5.5 Kgs',
         dim: '30x25x20 cm',
         courierCharges: '650.00',
+      },
+    },
+  ],
+  TRACKON: [
+    {
+      id: 'trackon-prime-delhi-240',
+      name: 'Trackon Prime Track - Delhi (₹240.00)',
+      description: 'SATNA → NEW DELHI | DOCUMENTS | AIR | AWB: 5183920194',
+      data: {
+        courier: 'TRACKON',
+        awb: '5183920194',
+        origin: 'SATNA',
+        dest: 'NEW DELHI',
+        product: 'PRIME TRACK',
+        type: 'DOCUMENT',
+        mode: 'AIR',
+        date: 'Sun Sep 20 2026',
+        consignorName: 'Maa Sharda Enterprises',
+        consignorAddress: 'Near Simariya Chowk, Main Road, Satna, MP 485001',
+        consignorPhone: '9827012345',
+        consigneeName: 'Rajdhani Commercial Corp',
+        consigneeAddress: 'Connaught Place, Barakhamba Road, New Delhi 110001',
+        consigneePhone: '9811098765',
+        contentSpec: 'URGENT BUSINESS PAPERS',
+        declaredValue: 'Not Applicable',
+        pieces: '1',
+        actualWeight: '0.25 Kgs',
+        chargedWeight: '0.50 Kgs',
+        dim: 'Not Applicable',
+        courierCharges: '240.00',
+      },
+    },
+    {
+      id: 'trackon-surface-bhopal-180',
+      name: 'Trackon Surface - Bhopal (₹180.00)',
+      description: 'SATNA → BHOPAL | PARCEL | SURFACE | AWB: 5129401824',
+      data: {
+        courier: 'TRACKON',
+        awb: '5129401824',
+        origin: 'SATNA',
+        dest: 'BHOPAL',
+        product: 'SURFACE EXPRESS',
+        type: 'NON-DOCUMENT',
+        mode: 'SURFACE',
+        date: 'Sun Sep 20 2026',
+        consignorName: 'Maa Sharda Enterprises',
+        consignorAddress: 'Near Simariya Chowk, Main Road, Satna, MP 485001',
+        consignorPhone: '9827012345',
+        consigneeName: 'Vikas Sharma',
+        consigneeAddress: 'MP Nagar Zone-II, Near Sargam Cinema, Bhopal, MP 462011',
+        consigneePhone: '9826012345',
+        contentSpec: 'COMPUTER ACCESSORIES',
+        declaredValue: '1800',
+        pieces: '1',
+        actualWeight: '0.80 Kgs',
+        chargedWeight: '1.00 Kgs',
+        dim: '20 cm X 15 cm X 10 cm',
+        courierCharges: '180.00',
+      },
+    },
+  ],
+  SHREEMARUTI: [
+    {
+      id: 'smc-express-ahmedabad-220',
+      name: 'Shree Maruti Domestic Express (₹220.00)',
+      description: 'SATNA → AHMEDABAD | SAMPLES | AIR | AWB: 1284920194',
+      data: {
+        courier: 'SHREEMARUTI',
+        awb: '1284920194',
+        origin: 'SATNA',
+        dest: 'AHMEDABAD',
+        product: 'DOMESTIC EXPRESS',
+        type: 'NON-DOCUMENT',
+        mode: 'AIR',
+        date: 'Sun Sep 20 2026',
+        consignorName: 'Maa Sharda Enterprises',
+        consignorAddress: 'Near Simariya Chowk, Main Road, Satna, MP 485001',
+        consignorPhone: '9827012345',
+        consigneeName: 'Gujarat Textiles & Hardware',
+        consigneeAddress: 'Ashram Road, Navrangpura, Ahmedabad, Gujarat 380009',
+        consigneePhone: '9825012345',
+        contentSpec: 'FABRIC & HARDWARE SAMPLES',
+        declaredValue: '3500',
+        pieces: '1',
+        actualWeight: '0.50 Kgs',
+        chargedWeight: '0.50 Kgs',
+        dim: '15 cm X 15 cm X 5 cm',
+        courierCharges: '220.00',
+      },
+    },
+    {
+      id: 'smc-cargo-surat-450',
+      name: 'Shree Maruti Cargo - Surat (₹450.00)',
+      description: 'SATNA → SURAT | INDUSTRIAL CARGO | SURFACE | AWB: 1239104821',
+      data: {
+        courier: 'SHREEMARUTI',
+        awb: '1239104821',
+        origin: 'SATNA',
+        dest: 'SURAT',
+        product: 'SURFACE CARGO',
+        type: 'NON-DOCUMENT',
+        mode: 'SURFACE',
+        date: 'Sun Sep 20 2026',
+        consignorName: 'Maa Sharda Enterprises',
+        consignorAddress: 'Near Simariya Chowk, Main Road, Satna, MP 485001',
+        consignorPhone: '9827012345',
+        consigneeName: 'Diamond City Trading Co',
+        consigneeAddress: 'Ring Road, Surat, Gujarat 395002',
+        consigneePhone: '9898012345',
+        contentSpec: 'HARDWARE FITTINGS',
+        declaredValue: '6000',
+        pieces: '2',
+        actualWeight: '3.5 Kgs',
+        chargedWeight: '4.0 Kgs',
+        dim: '25x20x15 cm',
+        courierCharges: '450.00',
       },
     },
   ],

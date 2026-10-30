@@ -1,4 +1,4 @@
-export type CourierType = 'DTDC' | 'BLUEDART' | 'DELHIVERY';
+export type CourierType = 'TRACKON' | 'SHREEMARUTI' | 'DELHIVERY' | 'DTDC' | 'BLUEDART';
 
 export interface CourierConfig {
   id: CourierType;

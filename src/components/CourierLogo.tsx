@@ -3,6 +3,8 @@ import { CourierType } from '../types';
 import { DtdcLogo } from './DtdcLogo';
 import { BlueDartLogo } from './BlueDartLogo';
 import { DelhiveryLogo } from './DelhiveryLogo';
+import { TrackonLogo } from './TrackonLogo';
+import { ShreeMarutiLogo } from './ShreeMarutiLogo';
 
 interface CourierLogoProps {
   courier: CourierType;
@@ -15,6 +17,12 @@ export const CourierLogo: React.FC<CourierLogoProps> = ({
   className = 'h-8',
   customLogoUrl,
 }) => {
+  if (courier === 'TRACKON') {
+    return <TrackonLogo className={className} customLogoUrl={customLogoUrl} />;
+  }
+  if (courier === 'SHREEMARUTI') {
+    return <ShreeMarutiLogo className={className} customLogoUrl={customLogoUrl} />;
+  }
   if (courier === 'BLUEDART') {
     return <BlueDartLogo className={className} customLogoUrl={customLogoUrl} />;
   }
@@ -23,3 +31,4 @@ export const CourierLogo: React.FC<CourierLogoProps> = ({
   }
   return <DtdcLogo className={className} customLogoUrl={customLogoUrl} />;
 };
+

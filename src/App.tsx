@@ -97,6 +97,12 @@ export default function App() {
         setCurrentView('courier-print');
       } else if (tab === 'label-printing') {
         setCurrentView('label-printing');
+      } else if (tab === 'trackon-generator') {
+        setCurrentView('generator');
+        handleSwitchCourier('TRACKON');
+      } else if (tab === 'shreemaruti-generator') {
+        setCurrentView('generator');
+        handleSwitchCourier('SHREEMARUTI');
       } else if (tab === 'dtdc-generator') {
         setCurrentView('generator');
         handleSwitchCourier('DTDC');
@@ -386,8 +392,41 @@ export default function App() {
               <div className="flex items-center gap-1.5 p-1 bg-slate-200/80 dark:bg-slate-850 rounded-xl border border-slate-300 dark:border-slate-700">
                 <button
                   type="button"
+                  onClick={() => handleSwitchCourier('TRACKON')}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    selectedCourier === 'TRACKON'
+                      ? 'bg-rose-700 text-white shadow-xs'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  Trackon
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchCourier('SHREEMARUTI')}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    selectedCourier === 'SHREEMARUTI'
+                      ? 'bg-emerald-700 text-white shadow-xs'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  Shree Maruti
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchCourier('DELHIVERY')}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    selectedCourier === 'DELHIVERY'
+                      ? 'bg-red-700 text-white shadow-xs'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  Delhivery
+                </button>
+                <button
+                  type="button"
                   onClick={() => handleSwitchCourier('DTDC')}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                     selectedCourier === 'DTDC'
                       ? 'bg-red-600 text-white shadow-xs'
                       : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800'
@@ -398,24 +437,13 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => handleSwitchCourier('BLUEDART')}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                     selectedCourier === 'BLUEDART'
                       ? 'bg-blue-600 text-white shadow-xs'
                       : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800'
                   }`}
                 >
                   Blue Dart
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSwitchCourier('DELHIVERY')}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    selectedCourier === 'DELHIVERY'
-                      ? 'bg-red-600 text-white shadow-xs'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  Delhivery
                 </button>
               </div>
 
@@ -569,9 +597,9 @@ export default function App() {
             fontScale: 1.0,
             boldNames: true,
             boxedContainers: false,
-            showBarcode: true,
-            barcodeValue: 'CP94820148IN',
-            postalBadge: 'SPEED_POST',
+            showBarcode: false,
+            barcodeValue: '',
+            postalBadge: 'NONE',
             senderPrefix: 'FROM:',
             receiverPrefix: 'TO:',
             includePhoneIcon: true,

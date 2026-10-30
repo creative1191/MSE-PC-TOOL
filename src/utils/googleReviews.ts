@@ -10,20 +10,20 @@ export const DEFAULT_GOOGLE_REVIEWS_CONFIG: GoogleReviewsConfig = {
   pamphletLink: '',
   business1: {
     id: 'biz1',
-    name: 'Maa Sharda Enterprises (Main Courier Office)',
-    tagline: 'Authorized DTDC, Blue Dart & Delhivery Booking Center',
-    reviewUrl: 'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4',
-    placeId: 'ChIJN1t_tDeuEmsRUsoyG83frY4',
-    address: 'Main Market Road, Satna, Madhya Pradesh',
+    name: 'Maa Sharda Enterprises (Trackon Courier)',
+    tagline: 'Trackon Courier Booking Center, Satna (M.P.)',
+    reviewUrl: 'https://g.page/r/CXFZojMLBwpCEAI/review',
+    placeId: 'CXFZojMLBwpCEAI',
+    address: 'Near Simariya Chowk, Main Road, Satna, Madhya Pradesh',
     enabled: true,
   },
   business2: {
     id: 'biz2',
-    name: 'Maa Sharda Express Logistics & Cargo Counter',
-    tagline: 'Express Parcel Delivery & Bulk Cargo Solutions',
-    reviewUrl: 'https://search.google.com/local/writereview?placeid=ChIJm97p8rV1EmsRMAA_SHARDA2',
-    placeId: 'ChIJm97p8rV1EmsRMAA_SHARDA2',
-    address: 'Station Road / Transport Nagar, Satna, Madhya Pradesh',
+    name: 'Maa Sharda Enterprises (Shree Maruti Courier)',
+    tagline: 'Shree Maruti Courier Services, Satna (M.P.)',
+    reviewUrl: 'https://g.page/r/CamhPWShStPKEAI/review',
+    placeId: 'CamhPWShStPKEAI',
+    address: 'Station Road / Simariya Chowk, Satna, Madhya Pradesh',
     enabled: true,
   },
 };
@@ -36,6 +36,21 @@ export function getStoredGoogleReviewsConfig(): GoogleReviewsConfig {
     const raw = localStorage.getItem(GOOGLE_REVIEWS_STORAGE_KEY);
     if (!raw) return DEFAULT_GOOGLE_REVIEWS_CONFIG;
     const parsed = JSON.parse(raw);
+
+    // Auto-migrate from old sample Place IDs to the user's real links
+    if (
+      !parsed.business1?.reviewUrl ||
+      parsed.business1.reviewUrl.includes('ChIJN1t_tDeuEmsRUsoyG83frY4')
+    ) {
+      parsed.business1 = { ...DEFAULT_GOOGLE_REVIEWS_CONFIG.business1 };
+    }
+    if (
+      !parsed.business2?.reviewUrl ||
+      parsed.business2.reviewUrl.includes('ChIJm97p8rV1EmsRMAA_SHARDA2')
+    ) {
+      parsed.business2 = { ...DEFAULT_GOOGLE_REVIEWS_CONFIG.business2 };
+    }
+
     return {
       ...DEFAULT_GOOGLE_REVIEWS_CONFIG,
       ...parsed,
@@ -92,6 +107,10 @@ export function getCourierTrackingUrl(courier: CourierType | undefined, awb: str
   if (!cleanAwb) return 'https://www.dtdc.in/tracking.asp';
 
   switch (courier) {
+    case 'TRACKON':
+      return `https://trackon.in/Tracking/Index?awb=${cleanAwb}`;
+    case 'SHREEMARUTI':
+      return `https://www.shreemaruticourier.com/track-shipment/?tracking_no=${cleanAwb}`;
     case 'BLUEDART':
       return `https://www.bluedart.com/tracking?handler=trak&numbers=${cleanAwb}`;
     case 'DELHIVERY':

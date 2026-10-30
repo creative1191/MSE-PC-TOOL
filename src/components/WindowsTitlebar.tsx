@@ -37,7 +37,7 @@ export const WindowsTitlebar: React.FC<WindowsTitlebarProps> = ({
         <h1 className="font-semibold text-xs tracking-wide text-slate-100 flex items-center gap-2">
           <span className="font-bold text-amber-300">MAA SHARDA ENTERPRISES</span>
           <span className="text-slate-500 hidden sm:inline">•</span>
-          <span className="text-slate-200 hidden sm:inline">Courier & Logistics Suite</span>
+          <span className="text-slate-200 hidden sm:inline">MSE Bill Generator</span>
           <span className="hidden md:inline-block text-[10px] text-blue-400 font-mono bg-blue-950/80 px-1.5 py-0.2 rounded border border-blue-800/60">
             Win 11 Fluent
           </span>
