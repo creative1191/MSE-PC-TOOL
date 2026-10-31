@@ -2,17 +2,16 @@ import * as pdfjsLib from 'pdfjs-dist';
 // @ts-ignore Vite query suffix for asset url
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
-// Configure the PDF.js worker safely
+// Configure the PDF.js worker safely for 100% OFFLINE execution (Zero server or CDN dependency)
 if (typeof window !== 'undefined') {
   try {
     if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-      pdfjsLib.GlobalWorkerOptions.workerSrc =
-        typeof pdfWorkerUrl === 'string'
-          ? pdfWorkerUrl
-          : `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+      if (typeof pdfWorkerUrl === 'string' && pdfWorkerUrl.length > 0) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+      }
     }
   } catch (err) {
-    console.warn('[PDF.js] Worker setup warning:', err);
+    console.warn('[PDF.js] Worker setup notice:', err);
   }
 }
 
@@ -28,6 +27,7 @@ export interface ExtractedLabelPage {
 /**
  * Extracts each page of an uploaded PDF file as a high-resolution PNG data URL.
  * Renders at 2.5x scale (approx 200-300 DPI) for crisp thermal/barcode printing.
+ * Operates 100% OFFLINE on client-side memory without sending any data to servers.
  */
 export async function extractPagesFromPdf(
   file: File,
@@ -37,11 +37,10 @@ export async function extractPagesFromPdf(
   let loadingTask: any = null;
   
   try {
+    // 100% offline document loading (no remote cMapUrl or unpkg CDN)
     loadingTask = pdfjsLib.getDocument({
       data: new Uint8Array(arrayBuffer),
-      cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
-      cMapPacked: true,
-      standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`,
+      useWorkerFetch: false,
     });
 
     const pdf = await loadingTask.promise;
@@ -144,11 +143,10 @@ export async function extractTextAndImageFromPdf(
   let loadingTask: any = null;
 
   try {
+    // 100% offline local rendering
     loadingTask = pdfjsLib.getDocument({
       data: new Uint8Array(arrayBuffer),
-      cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
-      cMapPacked: true,
-      standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`,
+      useWorkerFetch: false,
     });
 
     const pdf = await loadingTask.promise;

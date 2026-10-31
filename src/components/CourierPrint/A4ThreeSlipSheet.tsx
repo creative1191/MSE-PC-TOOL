@@ -64,9 +64,9 @@ export const A4ThreeSlipSheet: React.FC<A4ThreeSlipSheetProps> = ({
             );
           }
 
-          // In preview screen, show clean dashed paper-save indicator
+          // In preview screen, show clean dashed paper-save indicator (Strictly no-print & hidden during window.print)
           return (
-            <div key={copy.num} className="w-full flex flex-col" style={{ height: '88mm' }}>
+            <div key={copy.num} className="w-full flex flex-col no-print print:hidden" style={{ height: '88mm' }}>
               {index > 0 && (
                 <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono py-1 select-none">
                   <Scissors className="w-3 h-3 text-slate-400" />
@@ -83,7 +83,7 @@ export const A4ThreeSlipSheet: React.FC<A4ThreeSlipSheetProps> = ({
                   Paper Save Mode Active ({copy.label} Blank)
                 </span>
                 <p className="text-[11px] text-emerald-800 mt-0.5">
-                  Ye hissa printer me plain white rahega taaki aapka A4 paper kharab na ho.
+                  Ye hissa printer me bilkul saaf white bacha rahega taaki aapka A4 paper reusable rahe.
                 </p>
               </div>
             </div>

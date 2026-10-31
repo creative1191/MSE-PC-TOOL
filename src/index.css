@@ -105,26 +105,59 @@
     print-color-adjust: exact !important;
   }
 
-  /* Collapse only outer non-printable wrappers so no phantom spacing pushes to Page 2 */
+  /* Collapse outer wrappers so only the active printable sheet renders */
   #root,
   .min-h-screen,
   main,
+  .grid,
+  .xl\:grid-cols-12,
+  .xl\:col-span-7,
   .invoice-preview-wrapper {
     background: #ffffff !important;
     padding: 0 !important;
     margin: 0 !important;
     border: none !important;
     box-shadow: none !important;
-    max-width: none !important;
     width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
     height: auto !important;
     min-height: 0 !important;
-    max-height: none !important;
     display: block !important;
     overflow: visible !important;
   }
 
-  /* Explicitly preserve and enforce grid & flex layouts inside invoice and label sheets */
+  /* Universal Screen Chrome & Interactive UI Elimination in Print */
+  .no-print,
+  .no-print *,
+  header,
+  nav,
+  aside,
+  footer,
+  button,
+  input,
+  textarea,
+  select,
+  .windows-titlebar,
+  .studio-screen-ui,
+  .no-print-area {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Explicitly isolate and preserve grid & flex layouts inside invoice and label sheets */
+  #dtdc-print-area,
+  .courierprint-mount,
+  .label-print-stage,
+  #counter-standee-printable {
+    visibility: visible !important;
+  }
+
   #dtdc-print-area .grid,
   .print-container .grid,
   .print-container-landscape .grid,
@@ -137,21 +170,6 @@
   .print-container-landscape .flex,
   .print-page-wrapper .flex {
     display: flex !important;
-  }
-
-  /* Strict Screen-only Hiding */
-  .no-print,
-  nav,
-  header,
-  footer,
-  button,
-  .no-print * {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
   }
 
   .print-only {

@@ -2,7 +2,7 @@ import { DTDCBillData, PresetLabel } from '../types';
 
 export const INITIAL_BILL_DATA: DTDCBillData = {
   awb: '7D134850071',
-  origin: 'SATNA',
+  origin: 'NAGOD',
   dest: 'MEHSANA',
   product: 'B2C SMART EXPRESS',
   type: 'NON-DOCUMENT',
@@ -14,7 +14,7 @@ export const INITIAL_BILL_DATA: DTDCBillData = {
   consignorPhone: '0000000000',
   consignorGstin: '',
   consignorEmail: '',
-  senderDepot: 'NAGOD / SATNA DEPOT (MP)',
+  senderDepot: 'NAGOD',
 
   customerRefNo: '',
   consigneeName: 'Mantra softech india pvt ltd',
@@ -50,10 +50,11 @@ export const PRESET_LABELS: PresetLabel[] = [
   {
     id: 'dharmendra-mehsana-220',
     name: 'Dharmendra - Mehsana (₹220.00)',
-    description: 'SATNA → MEHSANA | ELECTRIC ITEMS | SURFACE | AWB: 7D134850071',
+    description: 'NAGOD → MEHSANA | ELECTRIC ITEMS | SURFACE | AWB: 7D134850071',
     data: {
       awb: '7D134850071',
-      origin: 'SATNA',
+      origin: 'NAGOD',
+      senderDepot: 'NAGOD',
       dest: 'MEHSANA',
       product: 'B2C SMART EXPRESS',
       type: 'NON-DOCUMENT',
@@ -77,10 +78,11 @@ export const PRESET_LABELS: PresetLabel[] = [
   {
     id: 'sandeep-trichur-220',
     name: 'Sandeep - Trichur (₹220.00)',
-    description: 'SATNA → TRICHUR | DOCUMENT | AIR | AWB: 7X117632485',
+    description: 'NAGOD → TRICHUR | DOCUMENT | AIR | AWB: 7X117632485',
     data: {
       awb: '7X117632485',
-      origin: 'SATNA',
+      origin: 'NAGOD',
+      senderDepot: 'NAGOD',
       dest: 'TRICHUR',
       product: 'B2C PRIORITY',
       type: 'DOCUMENT',
@@ -104,10 +106,11 @@ export const PRESET_LABELS: PresetLabel[] = [
   {
     id: 'shailendra-kota-950',
     name: 'Shailendra - Kota (₹950.00)',
-    description: 'SATNA → KOTA | LAPTOP | SURFACE | AWB: 7D134850069',
+    description: 'NAGOD → KOTA | LAPTOP | SURFACE | AWB: 7D134850069',
     data: {
       awb: '7D134850069',
-      origin: 'SATNA',
+      origin: 'NAGOD',
+      senderDepot: 'NAGOD',
       dest: 'KOTA',
       product: 'B2C SMART EXPRESS',
       type: 'NON-DOCUMENT',
@@ -131,10 +134,11 @@ export const PRESET_LABELS: PresetLabel[] = [
   {
     id: 'rahul-dhar-140',
     name: 'Rahul - Dhar (₹140.00)',
-    description: 'SATNA → DHAR | DOCUMENT | AIR | AWB: 7X117632483',
+    description: 'NAGOD → DHAR | DOCUMENT | AIR | AWB: 7X117632483',
     data: {
       awb: '7X117632483',
-      origin: 'SATNA',
+      origin: 'NAGOD',
+      senderDepot: 'NAGOD',
       dest: 'DHAR',
       product: 'B2C PRIORITY',
       type: 'DOCUMENT',

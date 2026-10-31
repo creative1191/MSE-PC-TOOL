@@ -167,16 +167,19 @@ export const generateAwbNumber = (courier: CourierType): string => {
   return `${prefix}${Math.floor(100000000 + Math.random() * 900000000)}`;
 };
 
+export const ACTIVE_BILL_COURIERS: CourierType[] = ['DTDC', 'BLUEDART', 'DELHIVERY'];
+
 export const COURIER_PRESETS: Record<CourierType, PresetLabel[]> = {
   DTDC: [
     {
       id: 'dtdc-dharmendra-220',
       name: 'Dharmendra - Mehsana (₹220.00)',
-      description: 'SATNA → MEHSANA | ELECTRIC ITEMS | SURFACE | AWB: 7D134850071',
+      description: 'NAGOD → MEHSANA | ELECTRIC ITEMS | SURFACE | AWB: 7D134850071',
       data: {
         courier: 'DTDC',
         awb: '7D134850071',
-        origin: 'SATNA',
+        origin: 'NAGOD',
+        senderDepot: 'NAGOD',
         dest: 'MEHSANA',
         product: 'B2C SMART EXPRESS',
         type: 'NON-DOCUMENT',
@@ -200,11 +203,12 @@ export const COURIER_PRESETS: Record<CourierType, PresetLabel[]> = {
     {
       id: 'dtdc-sandeep-220',
       name: 'Sandeep - Trichur (₹220.00)',
-      description: 'SATNA → TRICHUR | DOCUMENT | AIR | AWB: 7X117632485',
+      description: 'NAGOD → TRICHUR | DOCUMENT | AIR | AWB: 7X117632485',
       data: {
         courier: 'DTDC',
         awb: '7X117632485',
-        origin: 'SATNA',
+        origin: 'NAGOD',
+        senderDepot: 'NAGOD',
         dest: 'TRICHUR',
         product: 'B2C PRIORITY',
         type: 'DOCUMENT',
@@ -230,11 +234,12 @@ export const COURIER_PRESETS: Record<CourierType, PresetLabel[]> = {
     {
       id: 'bd-apex-laptop-950',
       name: 'Blue Dart Apex Priority - Laptop (₹950.00)',
-      description: 'SATNA → KOTA | LAPTOP | AIR (APEX) | AWB: 824910284',
+      description: 'NAGOD → KOTA | LAPTOP | AIR (APEX) | AWB: 824910284',
       data: {
         courier: 'BLUEDART',
         awb: '824910284',
-        origin: 'SATNA',
+        origin: 'NAGOD',
+        senderDepot: 'NAGOD',
         dest: 'KOTA',
         product: 'APEX (AIR)',
         type: 'NON-DOCUMENT',
@@ -258,11 +263,12 @@ export const COURIER_PRESETS: Record<CourierType, PresetLabel[]> = {
     {
       id: 'bd-domestic-doc-350',
       name: 'Blue Dart Domestic Priority - Docs (₹350.00)',
-      description: 'SATNA → MUMBAI | URGENT DOCS | AIR | AWB: 829184721',
+      description: 'NAGOD → MUMBAI | URGENT DOCS | AIR | AWB: 829184721',
       data: {
         courier: 'BLUEDART',
         awb: '829184721',
-        origin: 'SATNA',
+        origin: 'NAGOD',
+        senderDepot: 'NAGOD',
         dest: 'MUMBAI',
         product: 'DOMESTIC PRIORITY',
         type: 'DOCUMENT',
@@ -288,11 +294,12 @@ export const COURIER_PRESETS: Record<CourierType, PresetLabel[]> = {
     {
       id: 'del-express-parcel-280',
       name: 'Delhivery Express Parcel (₹280.00)',
-      description: 'SATNA → INDORE | E-COMMERCE SHIPMENT | SURFACE | AWB: 148291048291',
+      description: 'NAGOD → INDORE | E-COMMERCE SHIPMENT | SURFACE | AWB: 148291048291',
       data: {
         courier: 'DELHIVERY',
         awb: '148291048291',
-        origin: 'SATNA',
+        origin: 'NAGOD',
+        senderDepot: 'NAGOD',
         dest: 'INDORE',
         product: 'EXPRESS PARCEL',
         type: 'NON-DOCUMENT',
@@ -316,11 +323,12 @@ export const COURIER_PRESETS: Record<CourierType, PresetLabel[]> = {
     {
       id: 'del-heavy-surface-650',
       name: 'Delhivery Heavy Surface (₹650.00)',
-      description: 'SATNA → JAIPUR | AUTO SPARES | SURFACE | AWB: 149301928401',
+      description: 'NAGOD → JAIPUR | AUTO SPARES | SURFACE | AWB: 149301928401',
       data: {
         courier: 'DELHIVERY',
         awb: '149301928401',
-        origin: 'SATNA',
+        origin: 'NAGOD',
+        senderDepot: 'NAGOD',
         dest: 'JAIPUR',
         product: 'HEAVY SURFACE',
         type: 'NON-DOCUMENT',

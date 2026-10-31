@@ -77,6 +77,8 @@ export default function App() {
       return {
         ...prev,
         courier,
+        senderDepot: 'NAGOD',
+        origin: 'NAGOD',
         product: isDefaultProductOfAny ? config.defaultProducts[0] : prev.product,
         awb: generateAwbNumber(courier),
       };
@@ -97,12 +99,6 @@ export default function App() {
         setCurrentView('courier-print');
       } else if (tab === 'label-printing') {
         setCurrentView('label-printing');
-      } else if (tab === 'trackon-generator') {
-        setCurrentView('generator');
-        handleSwitchCourier('TRACKON');
-      } else if (tab === 'shreemaruti-generator') {
-        setCurrentView('generator');
-        handleSwitchCourier('SHREEMARUTI');
       } else if (tab === 'dtdc-generator') {
         setCurrentView('generator');
         handleSwitchCourier('DTDC');
@@ -134,7 +130,7 @@ export default function App() {
     setBillData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
-  // Quick Preset applier for Bill Generator
+  // Quick Preset applier for Bill Generator (Locks Origin and Sender Depot to NAGOD)
   const applyPreset = useCallback((preset: PresetLabel) => {
     setActivePresetId(preset.id);
     setBillData((prev) => ({
@@ -144,9 +140,9 @@ export default function App() {
       consignorAddress: preset.data.consignorAddress || prev.consignorAddress,
       consignorPhone: preset.data.consignorPhone || prev.consignorPhone,
       consignorGstin: preset.data.consignorGstin || '',
-      origin: preset.data.origin || prev.origin || 'SATNA',
+      origin: 'NAGOD',
       dest: preset.data.dest || prev.dest || 'MUMBAI',
-      senderDepot: preset.data.senderDepot || prev.senderDepot || 'SATNA',
+      senderDepot: 'NAGOD',
       product: preset.data.product || prev.product,
       type: preset.data.type || prev.type,
       mode: preset.data.mode || prev.mode,
@@ -267,20 +263,37 @@ export default function App() {
     setTimeout(() => setExportNotice(null), 3000);
   }, [billData]);
 
-  // Direct Print handler
+  // Direct Print handler supporting all views with automatic fallback
   const handleDirectPrint = useCallback(() => {
-    setExportNotice('🖨️ Opening print dialog...');
+    // If on Home Hub, seamlessly route into MSE Bill Generator first
+    if (currentView === 'home') {
+      setCurrentView('generator');
+      setExportNotice('Switched to MSE Bill Generator. Launching print dialog...');
+      setTimeout(() => {
+        try {
+          window.print();
+        } catch {
+          handleExportPdf();
+        }
+      }, 400);
+      return;
+    }
+
+    setExportNotice('🖨️ Opening print dialog... (Use PDF button for 1-click printable file if preview blocks dialog)');
     try {
       window.print();
-      setExportNotice('🖨️ Print command sent!');
-      setTimeout(() => setExportNotice(null), 4000);
+      setTimeout(() => {
+        setExportNotice('🖨️ Print command sent to printer!');
+        setTimeout(() => setExportNotice(null), 3500);
+      }, 1000);
 
       // Auto-open receipt dispatch modal if enabled
       if (getStoredGoogleReviewsConfig().autoOpenAfterPrint) {
-        setTimeout(() => setShowReceiptDispatchModal(true), 1000);
+        setTimeout(() => setShowReceiptDispatchModal(true), 1200);
       }
     } catch (err: any) {
-      console.warn('Direct print blocked:', err);
+      console.warn('Direct print blocked by sandbox:', err);
+      setExportNotice('⚠️ Browser blocked popup. Downloading print-ready PDF instead...');
       if (currentView === 'generator') {
         handleExportPdf();
       }
@@ -388,45 +401,12 @@ export default function App() {
                 <span>← Back to Home Hub</span>
               </button>
 
-              {/* In-view Courier Switcher Pills */}
+              {/* In-view Courier Switcher Pills (Active Bill Couriers: DTDC, Blue Dart, Delhivery) */}
               <div className="flex items-center gap-1.5 p-1 bg-slate-200/80 dark:bg-slate-850 rounded-xl border border-slate-300 dark:border-slate-700">
                 <button
                   type="button"
-                  onClick={() => handleSwitchCourier('TRACKON')}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    selectedCourier === 'TRACKON'
-                      ? 'bg-rose-700 text-white shadow-xs'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  Trackon
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSwitchCourier('SHREEMARUTI')}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    selectedCourier === 'SHREEMARUTI'
-                      ? 'bg-emerald-700 text-white shadow-xs'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  Shree Maruti
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSwitchCourier('DELHIVERY')}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    selectedCourier === 'DELHIVERY'
-                      ? 'bg-red-700 text-white shadow-xs'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  Delhivery
-                </button>
-                <button
-                  type="button"
                   onClick={() => handleSwitchCourier('DTDC')}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                     selectedCourier === 'DTDC'
                       ? 'bg-red-600 text-white shadow-xs'
                       : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800'
@@ -437,13 +417,24 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => handleSwitchCourier('BLUEDART')}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                     selectedCourier === 'BLUEDART'
                       ? 'bg-blue-600 text-white shadow-xs'
                       : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800'
                   }`}
                 >
                   Blue Dart
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchCourier('DELHIVERY')}
+                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    selectedCourier === 'DELHIVERY'
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  Delhivery
                 </button>
               </div>
 
@@ -458,16 +449,18 @@ export default function App() {
             </div>
 
             {/* Quick Presets Bar */}
-            <QuickPresetsBar
-              currentConfig={currentConfig}
-              currentPresets={currentPresets}
-              activePresetId={activePresetId}
-              onApplyPreset={applyPreset}
-              layoutMode={billData.layoutMode}
-              paperSaveMode={billData.paperSaveMode}
-              onUpdateField={updateField}
-              onClearAll={handleClearOldData}
-            />
+            <div className="no-print">
+              <QuickPresetsBar
+                currentConfig={currentConfig}
+                currentPresets={currentPresets}
+                activePresetId={activePresetId}
+                onApplyPreset={applyPreset}
+                layoutMode={billData.layoutMode}
+                paperSaveMode={billData.paperSaveMode}
+                onUpdateField={updateField}
+                onClearAll={handleClearOldData}
+              />
+            </div>
 
             {/* Split Screen Layout: Form & Live A4 Print Sheet */}
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
@@ -514,18 +507,20 @@ export default function App() {
 
               {/* RIGHT COLUMN: Real-Time Preview & Quick Export */}
               <div className="xl:col-span-7 space-y-3">
-                <BillExportBar
-                  currentConfig={currentConfig}
-                  billData={billData}
-                  isExporting={isExporting}
-                  onDirectPrint={handleDirectPrint}
-                  onExportPdf={handleExportPdf}
-                  onExportPng={handleExportPng}
-                  onExportHtml={handleExportHtml}
-                  onUpdateField={updateField}
-                  onShareWhatsAppCard={() => setShowServiceCardModal(true)}
-                  onDispatchReceipt={() => setShowReceiptDispatchModal(true)}
-                />
+                <div className="no-print">
+                  <BillExportBar
+                    currentConfig={currentConfig}
+                    billData={billData}
+                    isExporting={isExporting}
+                    onDirectPrint={handleDirectPrint}
+                    onExportPdf={handleExportPdf}
+                    onExportPng={handleExportPng}
+                    onExportHtml={handleExportHtml}
+                    onUpdateField={updateField}
+                    onShareWhatsAppCard={() => setShowServiceCardModal(true)}
+                    onDispatchReceipt={() => setShowReceiptDispatchModal(true)}
+                  />
+                </div>
 
                 {exportNotice && (
                   <div className="p-2.5 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200 rounded-lg text-xs font-semibold flex items-center justify-between no-print shadow-2xs">

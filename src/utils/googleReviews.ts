@@ -11,19 +11,19 @@ export const DEFAULT_GOOGLE_REVIEWS_CONFIG: GoogleReviewsConfig = {
   business1: {
     id: 'biz1',
     name: 'Maa Sharda Enterprises (Trackon Courier)',
-    tagline: 'Trackon Courier Booking Center, Satna (M.P.)',
+    tagline: 'Trackon Authorized Booking Office, Nagod (M.P.)',
     reviewUrl: 'https://g.page/r/CXFZojMLBwpCEAI/review',
     placeId: 'CXFZojMLBwpCEAI',
-    address: 'Near Simariya Chowk, Main Road, Satna, Madhya Pradesh',
+    address: 'Near Rest House, Satna-Panna Road, NH39, Nagod 485446 (MP)',
     enabled: true,
   },
   business2: {
     id: 'biz2',
     name: 'Maa Sharda Enterprises (Shree Maruti Courier)',
-    tagline: 'Shree Maruti Courier Services, Satna (M.P.)',
+    tagline: 'Shree Maruti Authorized Booking Hub, Nagod (M.P.)',
     reviewUrl: 'https://g.page/r/CamhPWShStPKEAI/review',
     placeId: 'CamhPWShStPKEAI',
-    address: 'Station Road / Simariya Chowk, Satna, Madhya Pradesh',
+    address: 'Near Rest House, Satna-Panna Road, NH39, Nagod 485446 (MP)',
     enabled: true,
   },
 };
@@ -221,8 +221,8 @@ export function generateReceiptDispatchMessage(params: ReceiptDispatchParams): s
       `━━━━━━━━━━━━━━━━━━━━\n`;
   }
 
-  const footer = `📞 *Booking / Rate Enquiries:* +91 9827012345 / 9425178910\n` +
-    `📍 *Address:* Main Market & Station Road, Satna (M.P.)\n` +
+  const footer = `📞 *Booking / WhatsApp:* +91 89820 91190\n` +
+    `📍 *Address:* Near Rest House, Satna-Panna Road, NH39, Nagod 485446 (MP)\n` +
     `_Thank you for choosing Maa Sharda Enterprises!_`;
 
   return `${header}${pamphletSection}${reviewSection}${footer}`;

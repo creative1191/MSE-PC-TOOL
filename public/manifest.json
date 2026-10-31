@@ -1,0 +1,39 @@
+{
+  "id": "/",
+  "name": "MSE Bill Generator - Maa Sharda Enterprises",
+  "short_name": "MSE Bill",
+  "description": "MSE Multi-courier Bill Generator, A4 Paper-Save address label studio, and consignment dispatch system supporting DTDC, Blue Dart, and Delhivery.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0b2447",
+  "background_color": "#f8fafc",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

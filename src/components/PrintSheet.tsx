@@ -69,23 +69,8 @@ export const PrintSheet: React.FC<PrintSheetProps> = ({
       </div>
 
       {data.paperSaveMode ? (
-        /* SCREEN HELPER: Visual representation of saved A4 paper area */
-        <div className="w-full flex-1 min-h-[175mm] mt-2 border-2 border-dashed border-emerald-400 bg-emerald-50/30 rounded-xl flex flex-col items-center justify-center p-6 text-center print:hidden select-none">
-          <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 text-xl font-bold flex items-center justify-center mb-2 shadow-2xs">
-            🌱
-          </div>
-          <span className="text-emerald-950 font-extrabold text-sm tracking-tight">
-            A4 Paper Save Mode Active (1 Copy Printed at Top)
-          </span>
-          <p className="text-emerald-800 text-xs mt-1.5 max-w-md leading-relaxed">
-            Sirf upar wala <strong>parcel address & courier bill slip</strong> print hoga. Dotted cut line se kaat kar parcel par chipkayein. Baaki ka <strong>67% A4 paper bilkul saaf bacha rahega</strong> jise aap dubara printer me daal sakte hain!
-          </p>
-          <div className="mt-3 flex items-center gap-3 px-3 py-1.5 rounded-lg bg-white border border-emerald-300 text-[11px] text-emerald-900 font-mono font-semibold shadow-2xs">
-            <span>Printed Slip: 200mm × 85mm</span>
-            <span>•</span>
-            <span>Paper Saved: 2/3 of A4 Sheet</span>
-          </div>
-        </div>
+        /* In Paper Save Mode: bottom 2/3 of A4 sheet is kept 100% completely blank pure white for physical print and exports */
+        <div className="w-full flex-1 min-h-[175mm] bg-white pointer-events-none" aria-hidden="true" />
       ) : (
         <>
           {/* COPY 2: Consignee's Copy */}

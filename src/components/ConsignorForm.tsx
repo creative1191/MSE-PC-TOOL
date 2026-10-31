@@ -110,15 +110,20 @@ export const ConsignorForm: React.FC<ConsignorFormProps> = React.memo(({
             />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-gray-600 mb-0.5">
-              Sender Depot:
-            </label>
+            <div className="flex items-center justify-between mb-0.5">
+              <label className="text-[11px] font-semibold text-gray-600">
+                Sender Depot:
+              </label>
+              <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                LOCKED: NAGOD
+              </span>
+            </div>
             <input
               type="text"
-              value={billData.senderDepot || ''}
-              onChange={(e) => onUpdateField('senderDepot', e.target.value)}
-              className="w-full border border-gray-300 rounded px-2.5 py-1.5 text-gray-800 focus:outline-none focus:border-blue-600 placeholder:text-gray-400 placeholder:font-normal"
-              placeholder="Sender Depot"
+              readOnly
+              value={billData.senderDepot || 'NAGOD'}
+              className="w-full border border-gray-200 bg-gray-50 rounded px-2.5 py-1.5 font-bold text-gray-800 cursor-not-allowed select-none"
+              title="Official MSE Sender Depot is permanently set to NAGOD (PIN: 485446)"
             />
           </div>
         </div>

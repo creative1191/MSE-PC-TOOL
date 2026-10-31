@@ -185,7 +185,7 @@ export const CourierPrintStudio: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div>
       {/* Dynamic PrintMount for 100% Physical Scale Print via window.print() */}
       <PrintMount
         to={to}
@@ -194,8 +194,10 @@ export const CourierPrintStudio: React.FC = () => {
         batchRecipients={batchRecipientsForPrint}
       />
 
-      {/* Top Studio Action Bar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+      {/* Screen-Only Studio UI (Strictly hidden during browser print) */}
+      <div className="no-print studio-screen-ui space-y-4">
+        {/* Top Studio Action Bar */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-full bg-white p-0.5 border border-amber-400 shadow-xs flex items-center justify-center shrink-0 overflow-hidden">
             <img
@@ -771,6 +773,7 @@ export const CourierPrintStudio: React.FC = () => {
           }}
         />
       )}
+      </div>
     </div>
   );
 };

@@ -22,14 +22,13 @@ import {
   Share2,
   MessageSquare,
   Star,
+  Info,
 } from 'lucide-react';
 import { DEFAULT_SENDER } from '../utils/indianPostalData';
 
 export type AppActiveTab =
   | 'home'
   | 'courier-print'
-  | 'trackon-generator'
-  | 'shreemaruti-generator'
   | 'delhivery-generator'
   | 'dtdc-generator'
   | 'bluedart-generator'
@@ -40,6 +39,36 @@ export type AppActiveTab =
   | 'settings'
   | 'service-card'
   | 'receipt-dispatch';
+
+/**
+ * Lean MNC-style popover for tile descriptions to keep dashboard surfaces clean
+ */
+const InfoTooltip: React.FC<{ title: string; details: string }> = ({ title, details }) => {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative inline-block" onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        onClick={() => setShow((prev) => !prev)}
+        className="w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+        title="View details"
+      >
+        <Info className="w-3.5 h-3.5" />
+      </button>
+      {show && (
+        <div className="absolute right-0 top-6 z-50 w-64 p-3 bg-slate-900 text-white text-[11px] rounded-xl shadow-xl border border-slate-700 animate-fadeIn pointer-events-auto leading-relaxed">
+          <div className="font-bold text-amber-400 mb-1 flex items-center gap-1">
+            <Info className="w-3 h-3 text-amber-400" />
+            <span>{title}</span>
+          </div>
+          <p className="text-slate-200">{details}</p>
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface HomeTilesHubProps {
   onSelectTab: (tab: AppActiveTab) => void;
@@ -171,7 +200,7 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
         </div>
       </div>
 
-      {/* 2. PRIMARY OPERATIONAL WORKSPACES (THE 4 CORE BUSINESS TOOLS) */}
+      {/* 2. PRIMARY OPERATIONAL WORKSPACES (THE 4 CORE BUSINESS TOOLS - MNC EXECUTIVE LAYOUT) */}
       <div>
         <div className="flex items-center justify-between mb-2.5 px-1">
           <div className="flex items-center gap-2">
@@ -196,9 +225,15 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                 <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/70 border border-blue-200 dark:border-blue-900 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-all">
                   <Mail className="w-6 h-6 stroke-[2.2]" />
                 </div>
-                <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-mono tracking-wider uppercase">
-                  TRUE 1:1 SCALE
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-mono tracking-wider uppercase">
+                    TRUE 1:1 SCALE
+                  </span>
+                  <InfoTooltip
+                    title="Envelope & 3-Slip Studio"
+                    details="Print true physical scale addresses on standard DL, C6, C5, C4 envelopes or A4 3-Slip side-by-side sheets on normal paper. Supports 1-Copy Paper Save mode so the remaining 67% of A4 sheet is kept 100% clean blank."
+                  />
+                </div>
               </div>
 
               <div>
@@ -206,7 +241,7 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                   Envelope & 3-Slip Studio
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                  Print true physical scale addresses on <strong>DL, C6, C5, C4 envelopes</strong> or <strong>A4 3-Slip side-by-side sheets</strong> on normal paper with Paper Save mode.
+                  DL, C5, C4 & A4 3-Slip physical scale printing with paper-save.
                 </p>
               </div>
             </div>
@@ -227,9 +262,15 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                 <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-900 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-all">
                   <FileSpreadsheet className="w-6 h-6 stroke-[2.2]" />
                 </div>
-                <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-mono tracking-wider uppercase">
-                  5 COURIER PARTNERS
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-mono tracking-wider uppercase">
+                    DTDC • BLUE DART • DELHIVERY
+                  </span>
+                  <InfoTooltip
+                    title="MSE Bill Generator"
+                    details="Official 3-copy consignment receipts & A4 parcel slips for DTDC, Blue Dart & Delhivery with Code 128 barcodes. Origin & Sender Depot are permanently set to NAGOD. Trackon and Shree Maruti receipts are sent automatically via company software at booking time."
+                  />
+                </div>
               </div>
 
               <div>
@@ -237,7 +278,7 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                   MSE Bill Generator
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                  Official <strong>3-copy courier bills & A4 paper save address slips</strong> for Trackon, Shree Maruti, Delhivery, DTDC & Blue Dart with Code 128 barcodes, cut lines, and OCR scan.
+                  Consignment notes & A4 paper save slips (Sender Depot: NAGOD).
                 </p>
               </div>
             </div>
@@ -258,9 +299,15 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                 <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-all">
                   <Grid2x2 className="w-6 h-6 stroke-[2.2]" />
                 </div>
-                <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-mono tracking-wider uppercase">
-                  A4 2X2 GRID
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-mono tracking-wider uppercase">
+                    A4 2X2 GRID
+                  </span>
+                  <InfoTooltip
+                    title="4-Up Shipping Labels"
+                    details="Arrange up to 4 shipping labels per standard A4 sheet in a 2x2 grid. Zero dummy waste slots, client-side offline PDF splitting, and 90° rotation controls."
+                  />
+                </div>
               </div>
 
               <div>
@@ -268,7 +315,7 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                   4-Up Shipping Labels
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                  Fit up to <strong>4 shipping labels per standard A4 sheet</strong>. Zero dummy waste slots, multi-page PDF splitting, crop tools, and 90° rotation controls.
+                  2x2 thermal & e-commerce label arranger with zero waste.
                 </p>
               </div>
             </div>
@@ -289,9 +336,15 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                 <div className="w-12 h-12 rounded-xl bg-cyan-50 dark:bg-cyan-950/70 border border-cyan-200 dark:border-cyan-900 text-cyan-600 dark:text-cyan-400 group-hover:bg-cyan-600 group-hover:text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-all">
                   <Layers className="w-6 h-6 stroke-[2.2]" />
                 </div>
-                <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full border border-cyan-200 dark:border-cyan-800 bg-cyan-50 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300 font-mono tracking-wider uppercase">
-                  BATCH PARSING
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full border border-cyan-200 dark:border-cyan-800 bg-cyan-50 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300 font-mono tracking-wider uppercase">
+                    BATCH PARSING
+                  </span>
+                  <InfoTooltip
+                    title="Bulk Batch Dispatch"
+                    details="Paste multiple recipient addresses from WhatsApp messages or CSV files. Automatically parses name, firm, address, landmark, PIN, and mobile into print-ready envelopes and batch vector PDFs."
+                  />
+                </div>
               </div>
 
               <div>
@@ -299,7 +352,7 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                   Bulk Batch Dispatch
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                  Paste multiple recipient addresses from <strong>WhatsApp or CSV</strong>. Batch-parse addresses into envelopes and download a multi-page batch Vector PDF.
+                  Batch address parsing from WhatsApp & multi-page Vector PDF.
                 </p>
               </div>
             </div>
@@ -312,7 +365,7 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
         </div>
       </div>
 
-      {/* 3. MASTER DATA, CUSTOMER OUTREACH & SYSTEM UTILITIES (4 TILES GRID) */}
+      {/* 3. MASTER DATA, CUSTOMER OUTREACH & SYSTEM UTILITIES (MNC LEAN CARDS) */}
       <div>
         <div className="flex items-center justify-between mb-2.5 px-1">
           <div className="flex items-center gap-2">
@@ -337,9 +390,15 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                 <div className="w-11 h-11 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-all">
                   <Share2 className="w-5 h-5 stroke-[2.2]" />
                 </div>
-                <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-700 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-mono tracking-wider uppercase">
-                  100% FREE WA
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-700 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-mono tracking-wider uppercase">
+                    100% FREE WA
+                  </span>
+                  <InfoTooltip
+                    title="Service Card & Pamphlet"
+                    details="Share official Maa Sharda Enterprises rates flyer and auto-generated digital visiting cards directly to customers on WhatsApp with 1-click."
+                  />
+                </div>
               </div>
 
               <div>
@@ -347,7 +406,7 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                   <span>Service Card & Pamphlet</span>
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                  Upload your own <strong>shop pamphlet or flyer</strong>, auto-generate digital visiting cards, and share directly to customers on WhatsApp in 1-click (Zero monthly fees).
+                  Digital visiting cards & official pamphlet sharing on WhatsApp.
                 </p>
               </div>
             </div>
@@ -368,9 +427,15 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                 <div className="w-11 h-11 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 group-hover:bg-amber-600 group-hover:text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-all">
                   <BookOpen className="w-5 h-5 stroke-[2.2]" />
                 </div>
-                <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-mono tracking-wider uppercase">
-                  {addressCount} CONTACTS
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 font-mono tracking-wider uppercase">
+                    {addressCount} CONTACTS
+                  </span>
+                  <InfoTooltip
+                    title="Saved Address Book"
+                    details="Store frequent senders, customers, and vendor dispatch profiles. Instant search, category filters, default branch sender, and CSV backup."
+                  />
+                </div>
               </div>
 
               <div>
@@ -378,7 +443,7 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                   Saved Address Book
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                  Store frequent senders, customers, and vendor dispatch profiles. Instant search, category filters, default branch sender, and CSV backup.
+                  Frequent senders, client profiles & instant CSV backup.
                 </p>
               </div>
             </div>
@@ -399,9 +464,15 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                 <div className="w-11 h-11 rounded-xl bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 group-hover:bg-purple-600 group-hover:text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-all">
                   <History className="w-5 h-5 stroke-[2.2]" />
                 </div>
-                <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-mono tracking-wider uppercase">
-                  DISPATCH AUDIT
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-mono tracking-wider uppercase">
+                    DISPATCH AUDIT
+                  </span>
+                  <InfoTooltip
+                    title="Print History & Audit Logs"
+                    details="Chronological log of past dispatches with timestamps, recipient details, tracking AWB numbers, and 1-click duplicate reprinting for lost envelopes."
+                  />
+                </div>
               </div>
 
               <div>
@@ -409,7 +480,7 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                   Print History & Audit Logs
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                  Log of past dispatches with timestamps, recipient details, tracking AWB numbers, and 1-click duplicate reprinting for lost envelopes.
+                  Historical dispatch log, tracking numbers & 1-click reprint.
                 </p>
               </div>
             </div>
@@ -430,9 +501,15 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                 <div className="w-11 h-11 rounded-xl bg-slate-500/10 dark:bg-slate-500/20 text-slate-700 dark:text-slate-300 group-hover:bg-slate-800 group-hover:text-white dark:group-hover:bg-slate-700 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-all">
                   <Settings className="w-5 h-5 stroke-[2.2]" />
                 </div>
-                <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono tracking-wider uppercase">
-                  PREFERENCES
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono tracking-wider uppercase">
+                    PREFERENCES
+                  </span>
+                  <InfoTooltip
+                    title="Print & Agency Settings"
+                    details="Configure custom agency/branch logos, default safe printer margins, postal stamps (Speed Post, Fragile, COD), and typography scaling."
+                  />
+                </div>
               </div>
 
               <div>
@@ -440,7 +517,7 @@ export const HomeTilesHub: React.FC<HomeTilesHubProps> = ({
                   Print & Agency Settings
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                  Configure custom agency/branch logos, default safe printer margins, postal stamps (Speed Post, Fragile, COD), and typography scaling.
+                  Logos, printer safe margins, postal stamps & font scaling.
                 </p>
               </div>
             </div>

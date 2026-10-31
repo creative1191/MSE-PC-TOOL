@@ -45,7 +45,7 @@ export const PrintMount: React.FC<PrintMountProps> = ({
 
   return (
     <>
-      {/* Injected True-Scale @page CSS Rule for Window.print() */}
+      {/* Injected True-Scale @page CSS Rule for Window.print() - Complete Print Isolation */}
       <style dangerouslySetInnerHTML={{
         __html: `
           @media print {
@@ -59,6 +59,26 @@ export const PrintMount: React.FC<PrintMountProps> = ({
               width: ${widthMm}mm !important;
               height: ${heightMm}mm !important;
               background: #ffffff !important;
+              overflow: visible !important;
+            }
+            /* Hide the rest of the application completely */
+            .no-print,
+            header,
+            nav,
+            aside,
+            footer,
+            button,
+            input,
+            textarea,
+            select,
+            .windows-titlebar,
+            .studio-screen-ui {
+              display: none !important;
+              visibility: hidden !important;
+              height: 0 !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: hidden !important;
             }
             .courierprint-mount {
               display: block !important;
@@ -68,7 +88,7 @@ export const PrintMount: React.FC<PrintMountProps> = ({
               position: absolute !important;
               top: 0 !important;
               left: 0 !important;
-              z-index: 999999 !important;
+              z-index: 99999999 !important;
               background: #ffffff !important;
             }
             .envelope-page {

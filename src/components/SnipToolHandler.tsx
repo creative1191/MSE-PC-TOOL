@@ -273,7 +273,7 @@ export const SnipToolHandler: React.FC<SnipToolHandlerProps> = ({
           const fallbackData: OCRMatchResult = {
             detectedCourier: currentCourier,
             awb: randomAwb,
-            origin: 'SATNA',
+            origin: 'NAGOD',
             dest: 'MEHSANA',
             product: defaultProduct,
             type: 'NON-DOCUMENT',

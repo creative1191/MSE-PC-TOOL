@@ -46,14 +46,20 @@ export const ShipmentSpecsForm: React.FC<ShipmentSpecsFormProps> = React.memo(({
           />
         </div>
         <div>
-          <label className="block text-[10px] font-semibold text-gray-600 mb-0.5">
-            Origin:
-          </label>
+          <div className="flex items-center justify-between mb-0.5">
+            <label className="block text-[10px] font-semibold text-gray-600">
+              Origin:
+            </label>
+            <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 rounded border border-emerald-200">
+              NAGOD
+            </span>
+          </div>
           <input
             type="text"
-            value={billData.origin}
-            onChange={(e) => onUpdateField('origin', e.target.value.toUpperCase())}
-            className="w-full border border-gray-300 rounded px-2 py-1 font-bold"
+            readOnly
+            value={billData.origin || 'NAGOD'}
+            className="w-full border border-gray-200 bg-gray-50 rounded px-2 py-1 font-bold text-gray-800 cursor-not-allowed select-none"
+            title="Official MSE Origin is locked to NAGOD"
           />
         </div>
         <div>
