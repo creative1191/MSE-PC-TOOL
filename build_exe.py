@@ -11,11 +11,27 @@ def main():
     
     web_app_dir = os.path.join(base_dir, "web_app")
     dist_dir = os.path.join(base_dir, "dist")
-    icon_path = os.path.join(base_dir, "public", "app-icon.ico")
     
-    # 1. Always ensure web_app has the latest built assets from dist
+    # Priority for application icon
+    icon_candidates = [
+        os.path.join(base_dir, "public", "favicon.ico"),
+        os.path.join(base_dir, "public", "app-icon.ico"),
+        os.path.join(base_dir, "web_app", "favicon.ico"),
+        os.path.join(base_dir, "dist", "favicon.ico"),
+    ]
+    icon_path = next((p for p in icon_candidates if os.path.isfile(p)), None)
+    
+    # 1. Always ensure web assets are fresh
+    has_npm = shutil.which("npm") is not None
+    if has_npm:
+        print("Rebuilding web frontend assets via npm run build...")
+        try:
+            subprocess.run(["npm", "run", "build"], shell=True, check=True)
+        except Exception as e:
+            print(f"Warning: npm run build encountered: {e}")
+
     if os.path.isdir(dist_dir) and os.path.isfile(os.path.join(dist_dir, "index.html")):
-        print("Syncing latest web assets from dist/ to web_app/...")
+        print("Syncing fresh web assets from dist/ to web_app/...")
         try:
             if os.path.exists(web_app_dir):
                 shutil.rmtree(web_app_dir, ignore_errors=True)
@@ -24,14 +40,8 @@ def main():
         os.makedirs(web_app_dir, exist_ok=True)
         shutil.copytree(dist_dir, web_app_dir, dirs_exist_ok=True)
     elif not os.path.isfile(os.path.join(web_app_dir, "index.html")):
-        print("Building web assets via npm run build...")
-        subprocess.run(["npm", "run", "build"], shell=True, check=True)
-        if os.path.isdir(dist_dir) and os.path.isfile(os.path.join(dist_dir, "index.html")):
-            os.makedirs(web_app_dir, exist_ok=True)
-            shutil.copytree(dist_dir, web_app_dir, dirs_exist_ok=True)
-        else:
-            print("ERROR: Could not find or build index.html in dist or web_app folder!")
-            sys.exit(1)
+        print("ERROR: Could not find or build index.html in dist or web_app folder!")
+        sys.exit(1)
             
     print(f"Verified web assets in: {web_app_dir}")
 
@@ -59,6 +69,7 @@ def main():
         f"--workpath={build_work_dir}",
         f"--add-data=web_app{sep}web_app",
         "--hidden-import=http.server",
+        "--hidden-import=socketserver",
         "--hidden-import=socket",
         "--hidden-import=threading",
         "--hidden-import=subprocess",
@@ -69,8 +80,9 @@ def main():
         "--clean",
         "-y"
     ]
-    if os.path.isfile(icon_path):
+    if icon_path and os.path.isfile(icon_path):
         args.append(f"--icon={icon_path}")
+        print(f"Using application icon: {icon_path}")
     
     print("\nExecuting PyInstaller with args:")
     for a in args:

@@ -28,6 +28,14 @@ export const PrintSheet: React.FC<PrintSheetProps> = ({
         id="dtdc-print-area"
         className={`print-container-landscape ${marginClass} bg-white w-[297mm] min-w-[297mm] max-w-[297mm] print:min-h-0 mx-auto shadow-md print:shadow-none box-border flex flex-col justify-center`}
       >
+        <style>{`
+          @media print {
+            @page {
+              size: A4 landscape;
+              margin: 0;
+            }
+          }
+        `}</style>
         <DtdcBillLayout
           data={data}
           copyTitle="Sender / Parcel Copy"
@@ -52,6 +60,14 @@ export const PrintSheet: React.FC<PrintSheetProps> = ({
         data.paperSaveMode ? 'justify-start' : 'justify-between'
       } box-border`}
     >
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 0;
+          }
+        }
+      `}</style>
       {/* COPY 1: Sender's Copy / Parcel Address Slip */}
       <DtdcBillLayout
         data={data}

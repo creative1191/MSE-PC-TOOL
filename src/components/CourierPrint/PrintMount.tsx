@@ -41,6 +41,18 @@ export const PrintMount: React.FC<PrintMountProps> = ({
   const isLandscape = widthMm >= heightMm;
   const isFromRight = settings.fromPosition === 'BOTTOM_RIGHT';
 
+  const isA4SheetPreset =
+    settings.preset === 'A4_3_SLIPS' ||
+    settings.preset === 'A4_COURIER_SLIP' ||
+    settings.preset === 'A4';
+
+  // Exact page size directive for Chromium print engine:
+  // For A4 sheets: A4 portrait
+  // For Envelopes (DL, C6, C5, C4, Custom): exact widthMm and heightMm
+  const pageSizeDirective = isA4SheetPreset
+    ? 'A4 portrait'
+    : `${widthMm}mm ${heightMm}mm`;
+
   const recipients = batchRecipients && batchRecipients.length > 0 ? batchRecipients : [to];
 
   return (
@@ -50,19 +62,20 @@ export const PrintMount: React.FC<PrintMountProps> = ({
         __html: `
           @media print {
             @page {
-              size: ${widthMm}mm ${heightMm}mm;
-              margin: 0 !important;
+              size: ${pageSizeDirective};
+              margin: 0;
             }
             body, html {
               margin: 0 !important;
               padding: 0 !important;
-              width: ${widthMm}mm !important;
-              height: ${heightMm}mm !important;
+              width: 100% !important;
+              height: auto !important;
               background: #ffffff !important;
               overflow: visible !important;
             }
-            /* Hide the rest of the application completely */
+            /* Strictly eliminate all non-print screen elements */
             .no-print,
+            .no-print *,
             header,
             nav,
             aside,
@@ -76,6 +89,7 @@ export const PrintMount: React.FC<PrintMountProps> = ({
               display: none !important;
               visibility: hidden !important;
               height: 0 !important;
+              width: 0 !important;
               margin: 0 !important;
               padding: 0 !important;
               overflow: hidden !important;
@@ -84,11 +98,10 @@ export const PrintMount: React.FC<PrintMountProps> = ({
               display: block !important;
               visibility: visible !important;
               width: ${widthMm}mm !important;
-              height: ${heightMm}mm !important;
-              position: absolute !important;
-              top: 0 !important;
-              left: 0 !important;
-              z-index: 99999999 !important;
+              height: auto !important;
+              margin: 0 auto !important;
+              padding: 0 !important;
+              position: static !important;
               background: #ffffff !important;
             }
             .envelope-page {
@@ -96,6 +109,8 @@ export const PrintMount: React.FC<PrintMountProps> = ({
               height: ${heightMm}mm !important;
               min-width: ${widthMm}mm !important;
               min-height: ${heightMm}mm !important;
+              max-width: ${widthMm}mm !important;
+              max-height: ${heightMm}mm !important;
               box-sizing: border-box !important;
               page-break-after: always !important;
               break-after: page !important;
@@ -103,6 +118,7 @@ export const PrintMount: React.FC<PrintMountProps> = ({
               background: #ffffff !important;
               color: #000000 !important;
               overflow: hidden !important;
+              margin: 0 auto !important;
             }
             .envelope-page:last-child {
               page-break-after: auto !important;
@@ -113,7 +129,7 @@ export const PrintMount: React.FC<PrintMountProps> = ({
       }} />
 
       {/* Actual Hidden/Print Container */}
-      <div className="hidden courierprint-mount print:block" style={{ width: `${widthMm}mm`, height: `${heightMm}mm` }}>
+      <div className="hidden courierprint-mount print:block" style={{ width: `${widthMm}mm`, height: 'auto' }}>
         {recipients.map((rec, idx) => {
           const toInlineCityPin = formatCityStatePin(rec.city, rec.state, rec.pinCode);
           const fromInlineCityPin = formatCityStatePin(from.city, from.state, from.pinCode);

@@ -7,7 +7,7 @@ import functools
 import mimetypes
 import subprocess
 import webbrowser
-from http.server import SimpleHTTPRequestHandler, HTTPServer
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 # Robust stdout/stderr/stdin safe stream for PyInstaller --windowed mode on Windows
 # In windowed mode, sys.stdout and sys.stderr are None, and standard handles are invalid.
@@ -46,7 +46,7 @@ mimetypes.add_type('font/ttf', '.ttf')
 last_heartbeat_time = time.time() + 60.0  # 60 seconds initial grace period
 
 def locate_web_dir():
-    """Locate the bundled or local web_app folder containing index.html."""
+    """Locate the bundled or local web_app/dist folder containing index.html."""
     candidates = []
     if getattr(sys, 'frozen', False):
         base_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
@@ -55,8 +55,8 @@ def locate_web_dir():
         candidates.append(base_dir)
     else:
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        candidates.append(os.path.join(base_dir, 'web_app'))
         candidates.append(os.path.join(base_dir, 'dist'))
+        candidates.append(os.path.join(base_dir, 'web_app'))
         candidates.append(base_dir)
 
     for c in candidates:
@@ -77,6 +77,8 @@ def find_free_port():
     return port
 
 class OfflineSpaHandler(SimpleHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
     def __init__(self, *args, directory=None, **kwargs):
         self.target_dir = directory
         super().__init__(*args, directory=directory, **kwargs)
@@ -95,10 +97,49 @@ class OfflineSpaHandler(SimpleHTTPRequestHandler):
         except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError):
             pass
 
+    def guess_type(self, path):
+        """
+        Hardcode strict standard MIME types to prevent Windows registry corruption.
+        On Windows, .js/.mjs is frequently mapped to 'text/plain' in registry, causing
+        Chromium/Edge to reject module scripts and render a blank white screen.
+        """
+        clean = path.lower().split('?')[0].split('#')[0]
+        if clean.endswith('.js') or clean.endswith('.mjs'):
+            return 'application/javascript; charset=utf-8'
+        if clean.endswith('.css'):
+            return 'text/css; charset=utf-8'
+        if clean.endswith('.svg'):
+            return 'image/svg+xml'
+        if clean.endswith('.json') or clean.endswith('.webmanifest') or clean.endswith('.map'):
+            return 'application/json; charset=utf-8'
+        if clean.endswith('.png'):
+            return 'image/png'
+        if clean.endswith('.jpg') or clean.endswith('.jpeg'):
+            return 'image/jpeg'
+        if clean.endswith('.ico'):
+            return 'image/x-icon'
+        if clean.endswith('.woff2'):
+            return 'font/woff2'
+        if clean.endswith('.woff'):
+            return 'font/woff'
+        if clean.endswith('.ttf'):
+            return 'font/ttf'
+        if clean.endswith('.html') or clean.endswith('.htm'):
+            return 'text/html; charset=utf-8'
+        return super().guess_type(path)
+
     def end_headers(self):
         self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
         self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', '*')
         super().end_headers()
+
+    def do_OPTIONS(self):
+        # Handle CORS preflight cleanly
+        self.send_response(200)
+        self.send_header('Content-Length', '0')
+        self.end_headers()
 
     def do_GET(self):
         global last_heartbeat_time
@@ -116,28 +157,36 @@ class OfflineSpaHandler(SimpleHTTPRequestHandler):
                 pass
             return
 
-        target_path = os.path.join(self.target_dir, clean_path.lstrip('/'))
-        
-        # If file doesn't exist, fallback to index.html (SPA routing behavior)
-        if not os.path.exists(target_path) or os.path.isdir(target_path):
-            index_path = os.path.join(self.target_dir, 'index.html')
-            if os.path.isfile(index_path):
-                self.path = '/index.html'
-                
+        rel_path = clean_path.lstrip('/')
+        target_path = os.path.join(self.target_dir, rel_path) if rel_path else os.path.join(self.target_dir, 'index.html')
+
+        # Static assets should NEVER fall back to index.html (which causes SyntaxError '<' in JS)
+        is_static_asset = any(clean_path.lower().endswith(ext) for ext in (
+            '.js', '.mjs', '.css', '.png', '.jpg', '.jpeg', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.json', '.map'
+        ))
+
+        # SPA routing: if file doesn't exist and is NOT a static asset, fallback to index.html
+        if not os.path.isfile(target_path):
+            if not is_static_asset:
+                index_path = os.path.join(self.target_dir, 'index.html')
+                if os.path.isfile(index_path):
+                    self.path = '/index.html'
+
         try:
             return super().do_GET()
         except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError):
             pass
 
-class ReusableHTTPServer(HTTPServer):
+class ReusableThreadingServer(ThreadingHTTPServer):
     allow_reuse_address = True
+    daemon_threads = True
 
 class ThreadedHTTPServer:
     def __init__(self, host, directory, port=0):
         self.host = host
         self.directory = directory
         handler = functools.partial(OfflineSpaHandler, directory=directory)
-        self.server = ReusableHTTPServer((host, port), handler)
+        self.server = ReusableThreadingServer((host, port), handler)
         self.port = self.server.server_address[1]
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
 
@@ -204,48 +253,45 @@ def get_browser_executables():
 def launch_app_window(url):
     """
     Launch in a 100% Dedicated Desktop Application Window.
-    Uses --app=URL and --new-window without --user-data-dir, guaranteeing
-    a clean window without browser tabs, URL bar, or bookmark bars.
+    Uses --app=URL and --new-window without browser tabs or URL bars.
     Safely avoids [WinError 6] Invalid Handle in windowed/noconsole mode.
     """
     candidates = get_browser_executables()
-    
-    extra_flags = {}
-    if sys.platform == 'win32':
-        extra_flags['creationflags'] = getattr(subprocess, 'CREATE_NO_WINDOW', 0x08000000)
 
-    # 1. Direct Executable Launch in App Mode (1920x1080 + Maximized)
+    # Common Chromium arguments for desktop applet mode
+    app_args = [
+        "--new-window",
+        f"--app={url}",
+        "--window-size=1920,1080",
+        "--start-maximized",
+        "--window-position=0,0",
+        "--no-first-run",
+        "--no-default-browser-check",
+    ]
+
+    # 1. Direct Executable Launch in App Mode
     for exe in candidates:
         try:
             subprocess.Popen(
-                [
-                    exe,
-                    "--new-window",
-                    f"--app={url}",
-                    "--window-size=1920,1080",
-                    "--start-maximized",
-                    "--window-position=0,0"
-                ],
+                [exe] + app_args,
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                **extra_flags
+                stderr=subprocess.DEVNULL
             )
             return True
         except Exception:
             pass
 
-    # 2. Windows Shell 'start' Command (system resolution)
+    # 2. Windows Shell 'start' Command fallback
     if sys.platform == 'win32':
         for browser_cmd in ('msedge', 'chrome'):
             try:
                 res = subprocess.run(
-                    ["cmd.exe", "/c", "start", browser_cmd, "--new-window", f"--app={url}", "--window-size=1920,1080", "--start-maximized"],
+                    ["cmd.exe", "/c", "start", browser_cmd, "--new-window", f"--app={url}", "--start-maximized"],
                     stdin=subprocess.DEVNULL,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
-                    timeout=3,
-                    **extra_flags
+                    timeout=3
                 )
                 if res.returncode == 0:
                     return True
@@ -287,7 +333,8 @@ def main():
     time.sleep(0.3)
     
     local_url = f"http://127.0.0.1:{port}/"
-    last_heartbeat_time = time.time() + 60.0  # 60s initial grace period
+    # 5 minutes initial grace period to allow OS/antivirus scanning on first launch
+    last_heartbeat_time = time.time() + 300.0
 
     # Launch dedicated App Mode window (NO tabs, NO URL bar, NO browser UI)
     launched = False
@@ -305,8 +352,8 @@ def main():
     try:
         while True:
             time.sleep(2)
-            # If the user closed the window and no heartbeat is received for 15s, shutdown cleanly
-            if time.time() - last_heartbeat_time > 15.0:
+            # If the window has been closed and zero heartbeat is received for 3 minutes, shutdown cleanly
+            if time.time() - last_heartbeat_time > 180.0:
                 break
     except (KeyboardInterrupt, SystemExit):
         pass

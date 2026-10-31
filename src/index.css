@@ -70,15 +70,9 @@
    - Fixes Requirement 4: Enforces strict border visibility & print-color-adjust.
    ========================================================================= */
 @media print {
-  /* Page Definition: Standard A4 with 4mm safe printer hardware margins */
+  /* Universal Zero Margins: Completely eliminates browser headers (timestamp, page title) and footers (URL, page number 1/1) */
   @page {
-    size: A4 portrait;
-    margin: 4mm 5mm;
-  }
-
-  @page landscape-page {
-    size: A4 landscape;
-    margin: 4mm 5mm;
+    margin: 0;
   }
 
   /* Universal print color adjustment enforcement */
@@ -91,15 +85,15 @@
     box-sizing: border-box !important;
   }
 
-  /* Root & Body: Zero margins/paddings to start strictly at top of Page 1 */
+  /* Root & Body: Clean flow without fixed width restricting envelope or custom paper prints */
   html,
   body {
     background: #ffffff !important;
     color: #000000 !important;
     padding: 0 !important;
     margin: 0 !important;
-    width: 210mm !important;
-    height: 100% !important;
+    width: 100% !important;
+    height: auto !important;
     overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
