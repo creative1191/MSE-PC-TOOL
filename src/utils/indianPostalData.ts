@@ -222,6 +222,72 @@ export const ENVELOPE_PRESETS: Record<EnvelopePresetType, EnvelopePresetConfig> 
   },
 };
 
+// Precise 6-digit PIN overrides for local logistics hubs and critical regional centers
+export const EXACT_PIN_MAP: Record<string, { state: string; sampleCity: string }> = {
+  '485446': { state: 'MADHYA PRADESH', sampleCity: 'NAGOD' },
+  '485001': { state: 'MADHYA PRADESH', sampleCity: 'SATNA' },
+  '485771': { state: 'MADHYA PRADESH', sampleCity: 'MAIHAR' },
+  '485661': { state: 'MADHYA PRADESH', sampleCity: 'AMARPATAN' },
+  '485115': { state: 'MADHYA PRADESH', sampleCity: 'RAMNAGAR' },
+  '485111': { state: 'MADHYA PRADESH', sampleCity: 'UCHERA' },
+  '485226': { state: 'MADHYA PRADESH', sampleCity: 'BIRSINGHPUR' },
+  '485331': { state: 'MADHYA PRADESH', sampleCity: 'CHITRAKOOT' },
+  '482001': { state: 'MADHYA PRADESH', sampleCity: 'JABALPUR' },
+  '482002': { state: 'MADHYA PRADESH', sampleCity: 'JABALPUR' },
+  '482003': { state: 'MADHYA PRADESH', sampleCity: 'JABALPUR' },
+  '482004': { state: 'MADHYA PRADESH', sampleCity: 'JABALPUR' },
+  '486001': { state: 'MADHYA PRADESH', sampleCity: 'REWA' },
+  '488001': { state: 'MADHYA PRADESH', sampleCity: 'PANNA' },
+  '483501': { state: 'MADHYA PRADESH', sampleCity: 'KATNI' },
+  '484001': { state: 'MADHYA PRADESH', sampleCity: 'SHAHDOL' },
+  '484661': { state: 'MADHYA PRADESH', sampleCity: 'UMARIA' },
+  '487001': { state: 'MADHYA PRADESH', sampleCity: 'NARSINGHPUR' },
+  '480001': { state: 'MADHYA PRADESH', sampleCity: 'CHHINDWARA' },
+  '481001': { state: 'MADHYA PRADESH', sampleCity: 'BALAGHAT' },
+};
+
+// 3-digit district level routing prefixes
+export const PIN_3DIGIT_MAP: Record<string, { state: string; sampleCity: string }> = {
+  '485': { state: 'MADHYA PRADESH', sampleCity: 'NAGOD / SATNA' },
+  '482': { state: 'MADHYA PRADESH', sampleCity: 'JABALPUR' },
+  '486': { state: 'MADHYA PRADESH', sampleCity: 'REWA' },
+  '483': { state: 'MADHYA PRADESH', sampleCity: 'KATNI' },
+  '488': { state: 'MADHYA PRADESH', sampleCity: 'PANNA' },
+  '484': { state: 'MADHYA PRADESH', sampleCity: 'SHAHDOL' },
+  '487': { state: 'MADHYA PRADESH', sampleCity: 'NARSINGHPUR' },
+  '480': { state: 'MADHYA PRADESH', sampleCity: 'CHHINDWARA' },
+  '481': { state: 'MADHYA PRADESH', sampleCity: 'BALAGHAT' },
+  '452': { state: 'MADHYA PRADESH', sampleCity: 'INDORE' },
+  '462': { state: 'MADHYA PRADESH', sampleCity: 'BHOPAL' },
+  '474': { state: 'MADHYA PRADESH', sampleCity: 'GWALIOR' },
+  '470': { state: 'MADHYA PRADESH', sampleCity: 'SAGAR' },
+  '110': { state: 'DELHI', sampleCity: 'NEW DELHI' },
+  '400': { state: 'MAHARASHTRA', sampleCity: 'MUMBAI' },
+  '411': { state: 'MAHARASHTRA', sampleCity: 'PUNE' },
+  '560': { state: 'KARNATAKA', sampleCity: 'BENGALURU' },
+  '600': { state: 'TAMIL NADU', sampleCity: 'CHENNAI' },
+  '700': { state: 'WEST BENGAL', sampleCity: 'KOLKATA' },
+  '500': { state: 'TELANGANA', sampleCity: 'HYDERABAD' },
+  '380': { state: 'GUJARAT', sampleCity: 'AHMEDABAD' },
+  '395': { state: 'GUJARAT', sampleCity: 'SURAT' },
+  '302': { state: 'RAJASTHAN', sampleCity: 'JAIPUR' },
+  '226': { state: 'UTTAR PRADESH', sampleCity: 'LUCKNOW' },
+  '208': { state: 'UTTAR PRADESH', sampleCity: 'KANPUR' },
+  '221': { state: 'UTTAR PRADESH', sampleCity: 'VARANASI' },
+  '282': { state: 'UTTAR PRADESH', sampleCity: 'AGRA' },
+  '250': { state: 'UTTAR PRADESH', sampleCity: 'MEERUT' },
+  '211': { state: 'UTTAR PRADESH', sampleCity: 'PRAYAGRAJ' },
+  '800': { state: 'BIHAR', sampleCity: 'PATNA' },
+  '834': { state: 'JHARKHAND', sampleCity: 'RANCHI' },
+  '751': { state: 'ODISHA', sampleCity: 'BHUBANESWAR' },
+  '781': { state: 'ASSAM', sampleCity: 'GUWAHATI' },
+  '141': { state: 'PUNJAB', sampleCity: 'LUDHIANA' },
+  '160': { state: 'CHANDIGARH', sampleCity: 'CHANDIGARH' },
+  '121': { state: 'HARYANA', sampleCity: 'FARIDABAD' },
+  '122': { state: 'HARYANA', sampleCity: 'GURUGRAM' },
+  '201': { state: 'UTTAR PRADESH', sampleCity: 'NOIDA / GHAZIABAD' },
+};
+
 export function toUpperClean(val: string | undefined | null): string {
   if (!val) return '';
   return String(val).trim().toUpperCase();
@@ -229,9 +295,26 @@ export function toUpperClean(val: string | undefined | null): string {
 
 export function lookupPinCode(pin: string): { state: string; sampleCity: string } | null {
   const cleanPin = pin.replace(/\D/g, '');
-  if (cleanPin.length < 2) return null;
-  const prefix = cleanPin.substring(0, 2);
-  return PIN_PREFIX_MAP[prefix] || null;
+  if (!cleanPin) return null;
+  // 1. Exact 6-digit match
+  if (EXACT_PIN_MAP[cleanPin]) {
+    return EXACT_PIN_MAP[cleanPin];
+  }
+  // 2. Exact 3-digit district prefix match
+  if (cleanPin.length >= 3) {
+    const prefix3 = cleanPin.substring(0, 3);
+    if (PIN_3DIGIT_MAP[prefix3]) {
+      return PIN_3DIGIT_MAP[prefix3];
+    }
+  }
+  // 3. 2-digit regional fallback
+  if (cleanPin.length >= 2) {
+    const prefix2 = cleanPin.substring(0, 2);
+    if (PIN_PREFIX_MAP[prefix2]) {
+      return PIN_PREFIX_MAP[prefix2];
+    }
+  }
+  return null;
 }
 
 export function parseRawAddressText(rawText: string, defaultId?: string): CourierAddress {
@@ -270,30 +353,35 @@ export function parseRawAddressText(rawText: string, defaultId?: string): Courie
   for (const line of lines) {
     const upper = line.toUpperCase();
 
-    if (/^(?:TO|CONSIGNEE|RECEIVER|DELIVER TO)\s*[:\-]\s*(.*)/i.test(line)) {
-      const match = line.match(/^(?:TO|CONSIGNEE|RECEIVER|DELIVER TO)\s*[:\-]\s*(.*)/i);
-      if (match && match[1]) name = match[1].trim();
+    // Skip standalone headers like "FROM,", "FROM:", "TO:", "TO,"
+    if (/^(?:TO|FROM|CONSIGNEE|CONSIGNOR|RECEIVER|SENDER|DISPATCH FROM|DELIVER TO)\s*[:,\-]?$/i.test(line)) {
       continue;
     }
 
-    if (/^(?:FROM|CONSIGNOR|SENDER|DISPATCH FROM)\s*[:\-]\s*(.*)/i.test(line)) {
-      const match = line.match(/^(?:FROM|CONSIGNOR|SENDER|DISPATCH FROM)\s*[:\-]\s*(.*)/i);
-      if (match && match[1]) name = match[1].trim();
+    if (/^(?:TO|CONSIGNEE|RECEIVER|DELIVER TO)\s*[:,\-]\s*(.*)/i.test(line)) {
+      const match = line.match(/^(?:TO|CONSIGNEE|RECEIVER|DELIVER TO)\s*[:,\-]\s*(.*)/i);
+      if (match && match[1]?.trim()) name = match[1].trim();
       continue;
     }
 
-    if (/^(?:NAME|ATTN|MR|MRS|MS|DR)\.?\s*[:\-]?\s*(.*)/i.test(line) && !name) {
-      const match = line.match(/^(?:NAME|ATTN|MR|MRS|MS|DR)\.?\s*[:\-]?\s*(.*)/i);
-      if (match && match[1]) name = match[1].trim();
+    if (/^(?:FROM|CONSIGNOR|SENDER|DISPATCH FROM)\s*[:,\-]\s*(.*)/i.test(line)) {
+      const match = line.match(/^(?:FROM|CONSIGNOR|SENDER|DISPATCH FROM)\s*[:,\-]\s*(.*)/i);
+      if (match && match[1]?.trim()) name = match[1].trim();
       continue;
     }
 
-    if (/(?:LANDMARK|NEAR|OPP|OPPOSITE|BEHIND|BESIDE)\s*[:\-]?\s*(.*)/i.test(line)) {
-      landmark = line.replace(/^(?:LANDMARK|NEAR|OPP|OPPOSITE)\s*[:\-]?\s*/i, '').trim();
+    if (/^(?:NAME|ATTN|MR|MRS|MS|DR)\.?\s*[:,\-]?\s*(.*)/i.test(line) && !name) {
+      const match = line.match(/^(?:NAME|ATTN|MR|MRS|MS|DR)\.?\s*[:,\-]?\s*(.*)/i);
+      if (match && match[1]?.trim()) name = match[1].trim();
       continue;
     }
 
-    if (/(?:MOB|PHONE|TEL|CONTACT|CELL)\s*[:\-]?\s*([0-9\s\-+]+)/i.test(line)) {
+    if (/(?:LANDMARK|NEAR|OPP|OPPOSITE|BEHIND|BESIDE)\s*[:,\-]?\s*(.*)/i.test(line)) {
+      landmark = line.replace(/^(?:LANDMARK|NEAR|OPP|OPPOSITE)\s*[:,\-]?\s*/i, '').trim();
+      continue;
+    }
+
+    if (/(?:MOB|PHONE|TEL|CONTACT|CELL)\s*[:,\-]?\s*([0-9\s\-+]+)/i.test(line)) {
       const m = line.match(/([0-9]{10})/);
       if (m && !mobile) mobile = m[1];
       continue;
@@ -315,6 +403,9 @@ export function parseRawAddressText(rawText: string, defaultId?: string): Courie
   if (!name && cleanLines.length > 0) {
     name = cleanLines.shift() || '';
   }
+
+  // Sanitize name: remove any remaining FROM, TO, SENDER, RECEIVER prefix
+  name = name.replace(/^(?:FROM|TO|SENDER|RECEIVER)\s*[,:\-]?\s*/i, '').trim();
 
   if (cleanLines.length > 0 && /(?:LTD|PVT|LIMITED|ENTERPRISES|TRADERS|CORP|SOLUTIONS|SERVICES|INC|LLP|STORE|SHOP)/i.test(cleanLines[0])) {
     company = cleanLines.shift() || '';

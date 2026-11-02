@@ -115,6 +115,17 @@ function renderEnvelopeOnPdf(
   const toBoxX = mX;
   const toBoxY = mY + (settings.postalBadge !== 'NONE' ? 7 : 2);
 
+  let cleanReceiverName = toUpperClean(to.name || 'RECEIVER NAME');
+  cleanReceiverName = cleanReceiverName.replace(/^TO[\s,:]+/i, '').trim() || 'RECEIVER NAME';
+
+  const senderCity = (from.pinCode === '485446' || from.city === 'JABALPUR') ? 'NAGOD' : (from.city || 'NAGOD');
+  const senderState = from.state || 'MADHYA PRADESH';
+  let cleanSenderName = toUpperClean(from.name || '');
+  cleanSenderName = cleanSenderName.replace(/^FROM[\s,:]+/i, '').trim();
+  if (!cleanSenderName || cleanSenderName === 'FROM') {
+    cleanSenderName = toUpperClean(from.company || 'MAA SHARDA ENTERPRISES');
+  }
+
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11 * scale);
   doc.setTextColor(0, 0, 0);
@@ -124,8 +135,7 @@ function renderEnvelopeOnPdf(
 
   doc.setFont('helvetica', settings.boldNames ? 'bold' : 'normal');
   doc.setFontSize(13 * scale);
-  const receiverName = toUpperClean(to.name || 'RECEIVER NAME');
-  doc.text(receiverName, toBoxX, currentY);
+  doc.text(cleanReceiverName, toBoxX, currentY);
   currentY += 5.2 * scale;
 
   if (to.company) {
@@ -152,8 +162,8 @@ function renderEnvelopeOnPdf(
   }
 
   if (to.landmark) {
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(9.5 * scale);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10 * scale);
     const landmarkText = `LANDMARK: ${toUpperClean(to.landmark)}`;
     doc.text(landmarkText, toBoxX, currentY);
     currentY += 4.2 * scale;
@@ -197,7 +207,7 @@ function renderEnvelopeOnPdf(
   doc.setFont('helvetica', settings.boldNames ? 'bold' : 'normal');
   doc.setFontSize(9.5 * scale);
   doc.setTextColor(0, 0, 0);
-  doc.text(toUpperClean(from.name || 'SENDER NAME'), fromBoxX, fromY);
+  doc.text(cleanSenderName, fromBoxX, fromY);
   fromY += 3.8 * scale;
 
   if (from.company) {
@@ -225,7 +235,7 @@ function renderEnvelopeOnPdf(
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5 * scale);
-  const fromCityPin = formatCityStatePin(from.city, from.state, from.pinCode);
+  const fromCityPin = formatCityStatePin(senderCity, senderState, from.pinCode || '485446');
   doc.text(fromCityPin, fromBoxX, fromY);
   fromY += 3.6 * scale;
 
@@ -260,11 +270,22 @@ function renderA4ThreeSlipsOnPdf(
     { num: 3, label: 'Copy 3' },
   ];
 
+  let cleanToName = toUpperClean(to.name || 'RECIPIENT NAME');
+  cleanToName = cleanToName.replace(/^TO[\s,:]+/i, '').trim() || 'RECIPIENT NAME';
+
+  const senderCity = (from.pinCode === '485446' || from.city === 'JABALPUR') ? 'NAGOD' : (from.city || 'NAGOD');
+  const senderState = from.state || 'MADHYA PRADESH';
+  let cleanFromName = toUpperClean(from.name || '');
+  cleanFromName = cleanFromName.replace(/^FROM[\s,:]+/i, '').trim();
+  if (!cleanFromName || cleanFromName === 'FROM') {
+    cleanFromName = toUpperClean(from.company || 'MAA SHARDA ENTERPRISES');
+  }
+
   const toCityState = [to.city, to.state].filter(Boolean).map(toUpperClean).join(', ');
   const toCityPin = toCityState && to.pinCode ? `${toCityState} - ${to.pinCode}` : toCityState || to.pinCode || '';
 
-  const fromCityState = [from.city, from.state].filter(Boolean).map(toUpperClean).join(', ');
-  const fromCityPin = fromCityState && from.pinCode ? `${fromCityState} - ${from.pinCode}` : fromCityState || from.pinCode || '';
+  const fromCityState = [senderCity, senderState].filter(Boolean).map(toUpperClean).join(', ');
+  const fromCityPin = fromCityState && from.pinCode ? `${fromCityState} - ${from.pinCode}` : fromCityState || from.pinCode || 'NAGOD, MADHYA PRADESH - 485446';
 
   copies.forEach((copy, idx) => {
     if (paperSave && copy.num > 1) {
@@ -306,7 +327,7 @@ function renderA4ThreeSlipsOnPdf(
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(0, 0, 0);
-    doc.text(to.name ? toUpperClean(to.name) : 'RECIPIENT NAME', toX, curToY);
+    doc.text(cleanToName, toX, curToY);
     curToY += 4.2;
 
     if (to.company) {
@@ -331,7 +352,7 @@ function renderA4ThreeSlipsOnPdf(
       curToY += split2.length * 3.3;
     }
     if (to.landmark) {
-      doc.setFont('helvetica', 'italic');
+      doc.setFont('helvetica', 'normal');
       doc.text(`LANDMARK: ${toUpperClean(to.landmark)}`, toX, curToY);
       curToY += 3.5;
     }
@@ -364,7 +385,7 @@ function renderA4ThreeSlipsOnPdf(
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9.5);
-    doc.text(toUpperClean(from.name || 'MAA SHARDA ENTERPRISES'), fromX, curFromY);
+    doc.text(cleanFromName, fromX, curFromY);
     curFromY += 3.8;
 
     if (from.company) {

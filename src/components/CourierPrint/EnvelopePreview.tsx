@@ -69,11 +69,26 @@ export const EnvelopePreview: React.FC<EnvelopePreviewProps> = ({
     ? `${toCityState} - ${to.pinCode}`
     : toCityState || to.pinCode || '';
 
-  const fromCityStateParts = [from.city, from.state].filter(Boolean).map(toUpperClean);
+  // Clean FROM city & state ensuring Nagod (485446) is never mistakenly shown as Jabalpur
+  const normalizedFromCity =
+    from.pinCode === '485446' || from.city?.toUpperCase() === 'JABALPUR'
+      ? 'NAGOD'
+      : from.city || 'NAGOD';
+  const normalizedFromState = from.state || 'MADHYA PRADESH';
+  const fromCityStateParts = [normalizedFromCity, normalizedFromState].filter(Boolean).map(toUpperClean);
   const fromCityState = fromCityStateParts.join(', ');
-  const fromInlineCityPin = fromCityState && from.pinCode
-    ? `${fromCityState} - ${from.pinCode}`
-    : fromCityState || from.pinCode || '';
+  const fromPin = from.pinCode || '485446';
+  const fromInlineCityPin = `${fromCityState} - ${fromPin}`;
+
+  // Sanitize display names to prevent duplicate "FROM, FROM," prefixes
+  let displayFromName = toUpperClean(from.name || '');
+  displayFromName = displayFromName.replace(/^FROM[\s,:]+/i, '').trim();
+  if (!displayFromName || displayFromName === 'FROM') {
+    displayFromName = toUpperClean(from.company || 'MAA SHARDA ENTERPRISES');
+  }
+
+  let displayToName = toUpperClean(to.name || 'RECEIVER NAME');
+  displayToName = displayToName.replace(/^TO[\s,:]+/i, '').trim() || 'RECEIVER NAME';
 
   const isFromRight = settings.fromPosition === 'BOTTOM_RIGHT';
 
@@ -101,8 +116,8 @@ export const EnvelopePreview: React.FC<EnvelopePreviewProps> = ({
             className="shadow-2xl border border-slate-300 dark:border-slate-700 rounded-sm overflow-hidden"
           >
             <A4ThreeSlipSheet
-              to={to}
-              from={from}
+              to={{ ...to, name: displayToName }}
+              from={{ ...from, name: displayFromName, city: normalizedFromCity }}
               settings={settings}
               isPrintView={false}
             />
@@ -179,7 +194,7 @@ export const EnvelopePreview: React.FC<EnvelopePreviewProps> = ({
               }`}
               style={{ fontSize: `${14 * fontScale}px` }}
             >
-              {toUpperClean(to.name || 'RECEIVER NAME')}
+              {displayToName}
             </div>
 
             {to.company && (
@@ -198,7 +213,7 @@ export const EnvelopePreview: React.FC<EnvelopePreviewProps> = ({
               {to.addressLine1 && <div>{toUpperClean(to.addressLine1)}</div>}
               {to.addressLine2 && <div>{toUpperClean(to.addressLine2)}</div>}
               {to.landmark && (
-                <div className="italic text-slate-700 text-[10px] font-medium">
+                <div className="text-slate-800 font-medium text-[11px]">
                   LANDMARK: {toUpperClean(to.landmark)}
                 </div>
               )}
@@ -256,7 +271,7 @@ export const EnvelopePreview: React.FC<EnvelopePreviewProps> = ({
                 }`}
                 style={{ fontSize: `${10.5 * fontScale}px` }}
               >
-                {toUpperClean(from.name || 'SENDER NAME')}
+                {displayFromName}
               </div>
 
               {from.company && (

@@ -131,8 +131,23 @@ export const PrintMount: React.FC<PrintMountProps> = ({
       {/* Actual Hidden/Print Container */}
       <div className="hidden courierprint-mount print:block" style={{ width: `${widthMm}mm`, height: 'auto' }}>
         {recipients.map((rec, idx) => {
+          // Enforce Nagod for sender when 485446 or erroneously Jabalpur
+          const senderCity = (from.pinCode === '485446' || from.city === 'JABALPUR')
+            ? 'NAGOD'
+            : (from.city || 'NAGOD');
+          const senderState = from.state || 'MADHYA PRADESH';
           const toInlineCityPin = formatCityStatePin(rec.city, rec.state, rec.pinCode);
-          const fromInlineCityPin = formatCityStatePin(from.city, from.state, from.pinCode);
+          const fromInlineCityPin = formatCityStatePin(senderCity, senderState, from.pinCode || '485446');
+
+          let displayFromName = toUpperClean(from.name || '');
+          displayFromName = displayFromName.replace(/^FROM[\s,:]+/i, '').trim();
+          if (!displayFromName || displayFromName === 'FROM') {
+            displayFromName = toUpperClean(from.company || 'MAA SHARDA ENTERPRISES');
+          }
+
+          let displayToName = toUpperClean(rec.name || 'RECEIVER NAME');
+          displayToName = displayToName.replace(/^TO[\s,:]+/i, '').trim() || 'RECEIVER NAME';
+
           const barcodeDataUrl = settings.showBarcode && settings.barcodeValue
             ? generateBarcodeDataUrl(settings.barcodeValue)
             : null;
@@ -151,8 +166,8 @@ export const PrintMount: React.FC<PrintMountProps> = ({
                 }}
               >
                 <A4ThreeSlipSheet
-                  to={rec}
-                  from={from}
+                  to={{ ...rec, name: displayToName }}
+                  from={{ ...from, name: displayFromName, city: senderCity }}
                   settings={settings}
                   isPrintView={true}
                 />
@@ -218,7 +233,7 @@ export const PrintMount: React.FC<PrintMountProps> = ({
                   }`}
                   style={{ fontSize: `${14 * scale}px` }}
                 >
-                  {toUpperClean(rec.name || 'RECEIVER NAME')}
+                  {displayToName}
                 </div>
 
                 {/* Company */}
@@ -239,7 +254,7 @@ export const PrintMount: React.FC<PrintMountProps> = ({
                   {rec.addressLine1 && <div>{toUpperClean(rec.addressLine1)}</div>}
                   {rec.addressLine2 && <div>{toUpperClean(rec.addressLine2)}</div>}
                   {rec.landmark && (
-                    <div className="italic text-[10px]">
+                    <div className="text-[11px] font-medium">
                       LANDMARK: {toUpperClean(rec.landmark)}
                     </div>
                   )}
@@ -295,7 +310,7 @@ export const PrintMount: React.FC<PrintMountProps> = ({
                     }`}
                     style={{ fontSize: `${10.5 * scale}px` }}
                   >
-                    {toUpperClean(from.name || 'SENDER NAME')}
+                    {displayFromName}
                   </div>
 
                   {from.company && (
@@ -320,7 +335,7 @@ export const PrintMount: React.FC<PrintMountProps> = ({
                     className="font-bold text-black uppercase text-[9.5px] mt-0.5"
                     style={{ fontSize: `${9.5 * scale}px` }}
                   >
-                    {fromInlineCityPin || 'CITY, STATE - 000000'}
+                    {fromInlineCityPin || 'NAGOD, MADHYA PRADESH - 485446'}
                   </div>
 
                   {from.mobile && (

@@ -61,7 +61,22 @@ export const CourierPrintStudio: React.FC = () => {
   const [from, setFrom] = useState<CourierAddress>(() => {
     try {
       const saved = localStorage.getItem('courierprint_active_from_v1');
-      return saved ? JSON.parse(saved) : DEFAULT_SENDER;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Self-heal: If previous session had Jabalpur for 485446 or name stored as "FROM,"
+        if (parsed.pinCode === '485446' || parsed.city === 'JABALPUR' || parsed.name === 'FROM,' || !parsed.name || parsed.name === 'FROM') {
+          return {
+            ...DEFAULT_SENDER,
+            ...parsed,
+            city: (parsed.pinCode === '485446' || parsed.city === 'JABALPUR') ? 'NAGOD' : parsed.city,
+            name: (parsed.name === 'FROM,' || parsed.name === 'FROM' || !parsed.name)
+              ? DEFAULT_SENDER.name
+              : parsed.name.replace(/^FROM[\s,:]+/i, '').trim(),
+          };
+        }
+        return parsed;
+      }
+      return DEFAULT_SENDER;
     } catch {
       return DEFAULT_SENDER;
     }

@@ -27,8 +27,19 @@ export const A4ThreeSlipSheet: React.FC<A4ThreeSlipSheetProps> = ({
   const toCityState = [to.city, to.state].filter(Boolean).map(toUpperClean).join(', ');
   const toCityPin = toCityState && to.pinCode ? `${toCityState} - ${to.pinCode}` : toCityState || to.pinCode || '';
 
-  const fromCityState = [from.city, from.state].filter(Boolean).map(toUpperClean).join(', ');
-  const fromCityPin = fromCityState && from.pinCode ? `${fromCityState} - ${from.pinCode}` : fromCityState || from.pinCode || '';
+  const senderCity = (from.pinCode === '485446' || from.city === 'JABALPUR') ? 'NAGOD' : (from.city || 'NAGOD');
+  const senderState = from.state || 'MADHYA PRADESH';
+  const fromCityState = [senderCity, senderState].filter(Boolean).map(toUpperClean).join(', ');
+  const fromCityPin = fromCityState && from.pinCode ? `${fromCityState} - ${from.pinCode}` : fromCityState || from.pinCode || 'NAGOD, MADHYA PRADESH - 485446';
+
+  let cleanFromName = toUpperClean(from.name || '');
+  cleanFromName = cleanFromName.replace(/^FROM[\s,:]+/i, '').trim();
+  if (!cleanFromName || cleanFromName === 'FROM') {
+    cleanFromName = toUpperClean(from.company || 'MAA SHARDA ENTERPRISES');
+  }
+
+  let cleanToName = toUpperClean(to.name || 'RECIPIENT NAME');
+  cleanToName = cleanToName.replace(/^TO[\s,:]+/i, '').trim() || 'RECIPIENT NAME';
 
   const copies = [
     { num: 1, label: 'Copy 1' },
@@ -120,7 +131,7 @@ export const A4ThreeSlipSheet: React.FC<A4ThreeSlipSheetProps> = ({
                   className="font-bold text-slate-950 uppercase tracking-tight leading-snug"
                   style={{ fontSize: `${13.5 * fontScale}px` }}
                 >
-                  {to.name ? toUpperClean(to.name) : 'RECIPIENT NAME'}
+                  {cleanToName}
                 </div>
 
                 {to.company && (
@@ -139,7 +150,7 @@ export const A4ThreeSlipSheet: React.FC<A4ThreeSlipSheetProps> = ({
                   {to.addressLine1 && <div>{toUpperClean(to.addressLine1)}</div>}
                   {to.addressLine2 && <div>{toUpperClean(to.addressLine2)}</div>}
                   {to.landmark && (
-                    <div className="italic text-slate-700 font-medium">
+                    <div className="text-slate-800 font-medium">
                       LANDMARK: {toUpperClean(to.landmark)}
                     </div>
                   )}
@@ -175,7 +186,7 @@ export const A4ThreeSlipSheet: React.FC<A4ThreeSlipSheetProps> = ({
                   className="font-bold text-slate-950 uppercase leading-snug"
                   style={{ fontSize: `${11.5 * fontScale}px` }}
                 >
-                  {toUpperClean(from.name || 'MAA SHARDA ENTERPRISES')}
+                  {cleanFromName}
                 </div>
 
                 {from.company ? (

@@ -7,8 +7,10 @@ import {
   toUpperClean,
   lookupPinCode,
   parseRawAddressText,
+  DEFAULT_SENDER,
   INDIAN_STATES,
 } from '../../utils/indianPostalData';
+import { extractAddressFromAnyFile } from '../../utils/universalAddressExtractor';
 import { runCourierOcr } from '../../utils/tesseractOcr';
 import {
   FileText,
@@ -23,6 +25,8 @@ import {
   AlertCircle,
   Split,
   Eye,
+  BookmarkPlus,
+  RotateCcw,
 } from 'lucide-react';
 
 interface AddressInputTabsProps {
@@ -51,7 +55,7 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
   const [pastedText, setPastedText] = useState('');
   const [pasteNotice, setPasteNotice] = useState<string | null>(null);
 
-  // OCR state
+  // Scanning & File progress state
   const [isScanning, setIsScanning] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
   const [ocrStatusText, setOcrStatusText] = useState('');
@@ -74,53 +78,101 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
     setTimeout(() => setPasteNotice(null), 3000);
   };
 
-  // Process an image through Tesseract OCR
-  const processImageFile = async (file: File) => {
+  // Quick paste directly from OS clipboard
+  const handleQuickClipboardPaste = async (target: 'TO' | 'FROM') => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim().length > 3) {
+          const parsed = parseRawAddressText(text);
+          if (target === 'TO') {
+            onChangeTo({ ...parsed, id: to.id || 'to-addr' });
+            setPasteNotice('✅ TO (Receiver) filled from Clipboard!');
+          } else {
+            onChangeFrom({ ...parsed, id: from.id || 'from-addr' });
+            setPasteNotice('✅ FROM (Sender) filled from Clipboard!');
+          }
+          setTimeout(() => setPasteNotice(null), 3000);
+          return;
+        }
+      }
+    } catch {}
+    setActiveTab('PASTE');
+    setTargetType(target);
+  };
+
+  // Save current address to Address Book in localStorage
+  const saveAddressToBook = (addr: CourierAddress, label: 'TO' | 'FROM') => {
+    try {
+      const stored = localStorage.getItem('courierprint_address_book_v1');
+      const list: CourierAddress[] = stored ? JSON.parse(stored) : [];
+      const newEntry: CourierAddress = {
+        ...addr,
+        id: `addr-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        category: label === 'FROM' ? 'BRANCH' : 'CUSTOMER',
+        createdAt: new Date().toISOString(),
+      };
+      const filtered = list.filter((a) => !(a.name === addr.name && a.pinCode === addr.pinCode));
+      const updated = [newEntry, ...filtered];
+      localStorage.setItem('courierprint_address_book_v1', JSON.stringify(updated));
+      setPasteNotice(`💾 ${label} address successfully saved to Address Book!`);
+      setTimeout(() => setPasteNotice(null), 3000);
+    } catch (e) {
+      setPasteNotice('⚠️ Could not save address to book');
+      setTimeout(() => setPasteNotice(null), 3000);
+    }
+  };
+
+  // Reset FROM to verified Maa Sharda Enterprises (Nagod 485446)
+  const handleResetToMse = () => {
+    onChangeFrom({ ...DEFAULT_SENDER });
+    setPasteNotice('🏢 Sender reset to Maa Sharda Enterprises, Nagod (485446)!');
+    setTimeout(() => setPasteNotice(null), 3000);
+  };
+
+  // Universal File Processor for all supported extensions
+  const processUniversalFile = async (file: File) => {
     setIsScanning(true);
-    setOcrProgress(10);
-    setOcrStatusText('Loading image...');
+    setOcrProgress(15);
+    setOcrStatusText(`Reading ${file.name}...`);
 
     try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const dataUrl = e.target?.result as string;
-        try {
-          const res = await runCourierOcr(dataUrl, forceDualSplit, (pct: number, status: string) => {
-            setOcrProgress(pct);
-            setOcrStatusText(status);
-          });
+      const res = await extractAddressFromAnyFile(file, forceDualSplit, (pct, msg) => {
+        setOcrProgress(pct);
+        setOcrStatusText(msg);
+      });
 
-          if (res.isSplitDual || (res.sender?.name && res.receiver?.name)) {
-            // Open Dual Verification modal
-            onOpenDualVerification(res);
-          } else {
-            // Single address extracted
-            if (targetType === 'TO') {
-              onChangeTo({
-                ...to,
-                ...(res.receiver as CourierAddress),
-                id: to.id,
-              });
-            } else {
-              onChangeFrom({
-                ...from,
-                ...(res.receiver as CourierAddress),
-                id: from.id,
-              });
-            }
-          }
-        } catch (err: any) {
-          console.error('OCR recognition error:', err);
-          alert('OCR failed: ' + (err.message || 'Could not recognize address text'));
-        } finally {
-          setIsScanning(false);
+      if (res.dualResult) {
+        onOpenDualVerification(res.dualResult);
+      } else {
+        if (targetType === 'TO') {
+          onChangeTo({
+            ...to,
+            ...res.parsedAddress,
+            id: to.id,
+          });
+          setPasteNotice(`✅ Receiver (TO) updated from ${file.name}!`);
+        } else {
+          onChangeFrom({
+            ...from,
+            ...res.parsedAddress,
+            id: from.id,
+          });
+          setPasteNotice(`✅ Sender (FROM) updated from ${file.name}!`);
         }
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      console.error(err);
+        setTimeout(() => setPasteNotice(null), 3500);
+      }
+    } catch (err: any) {
+      console.error('File extraction error:', err);
+      alert('Extraction notice: ' + (err.message || 'Could not parse addresses from file'));
+    } finally {
       setIsScanning(false);
     }
+  };
+
+  // Process an image through Tesseract OCR
+  const processImageFile = async (file: File) => {
+    processUniversalFile(file);
   };
 
   // Global Clipboard paste listener for Ctrl+V images
@@ -145,23 +197,24 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
     return () => window.removeEventListener('paste', handlePaste);
   }, [forceDualSplit, targetType]);
 
+  // Instant PIN Code Auto-Select: immediately sets city and state
   const handlePinChange = (val: string, isTo: boolean) => {
     const clean = val.replace(/\D/g, '').slice(0, 6);
+    const lookup = lookupPinCode(clean);
+
     if (isTo) {
-      const lookup = lookupPinCode(clean);
       onChangeTo({
         ...to,
         pinCode: clean,
-        state: lookup && !to.state ? lookup.state : to.state,
-        city: lookup && !to.city ? lookup.sampleCity : to.city,
+        city: lookup ? lookup.sampleCity : to.city,
+        state: lookup ? lookup.state : to.state,
       });
     } else {
-      const lookup = lookupPinCode(clean);
       onChangeFrom({
         ...from,
         pinCode: clean,
-        state: lookup && !from.state ? lookup.state : from.state,
-        city: lookup && !from.city ? lookup.sampleCity : from.city,
+        city: lookup ? lookup.sampleCity : from.city,
+        state: lookup ? lookup.state : from.state,
       });
     }
   };
@@ -293,14 +346,44 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
         <div className="space-y-4">
           {/* TO (RECEIVER) FORM - PROMINENT */}
           <div className="border border-blue-200 dark:border-blue-900/60 rounded-lg p-3 bg-blue-50/20 dark:bg-blue-950/10 space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-1.5 pb-1">
               <span className="font-black text-xs tracking-wider text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
                 <span>TO (RECEIVER ADDRESS)</span>
                 <span className="text-[10px] font-normal text-slate-500">• Top Wide Box</span>
               </span>
-              <span className="text-[10px] text-blue-700 dark:text-blue-300 font-mono">
-                MANDATORY UPPERCASE
-              </span>
+
+              {/* Fast Action Buttons for TO */}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleQuickClipboardPaste('TO')}
+                  className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold text-blue-700 dark:text-blue-300 bg-blue-100/70 hover:bg-blue-200/80 dark:bg-blue-900/40 rounded transition-colors cursor-pointer"
+                  title="Directly paste address from clipboard"
+                >
+                  <ClipboardPaste className="w-3 h-3" />
+                  <span>Paste</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onOpenAddressBook}
+                  className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-200/80 hover:bg-slate-300 dark:bg-slate-800 rounded transition-colors cursor-pointer"
+                  title="Select from saved address book"
+                >
+                  <BookOpen className="w-3 h-3 text-blue-600" />
+                  <span>Book</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => saveAddressToBook(to, 'TO')}
+                  className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100/80 hover:bg-emerald-200 dark:bg-emerald-950/60 rounded transition-colors cursor-pointer"
+                  title="Save this recipient address to address book"
+                >
+                  <BookmarkPlus className="w-3 h-3 text-emerald-700" />
+                  <span>Save</span>
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -312,7 +395,7 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
                   type="text"
                   value={to.name}
                   onChange={(e) => onChangeTo({ ...to, name: toUpperClean(e.target.value) })}
-                  placeholder="E.G. RAJESH KUMAR SHARMA"
+                  placeholder="E.G. ARPIT PANDEY"
                   className="w-full uppercase text-xs font-bold px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-950 dark:text-slate-100 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
@@ -339,7 +422,7 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
                 type="text"
                 value={to.addressLine1}
                 onChange={(e) => onChangeTo({ ...to, addressLine1: toUpperClean(e.target.value) })}
-                placeholder="FLAT 302, SAI KRIPA APTS, 7TH CROSS"
+                placeholder="HOUSE NO. 804, GATE NO. 4 ROAD"
                 className="w-full uppercase text-xs px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
               />
             </div>
@@ -353,7 +436,7 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
                   type="text"
                   value={to.addressLine2 || ''}
                   onChange={(e) => onChangeTo({ ...to, addressLine2: toUpperClean(e.target.value) })}
-                  placeholder="INDIRANAGAR 1ST STAGE"
+                  placeholder="SNEH NAGAR, KAMLA NEHRU WARD"
                   className="w-full uppercase text-xs px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                 />
               </div>
@@ -366,13 +449,13 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
                   type="text"
                   value={to.landmark || ''}
                   onChange={(e) => onChangeTo({ ...to, landmark: toUpperClean(e.target.value) })}
-                  placeholder="NEAR CMH HOSPITAL"
+                  placeholder="NEAR KHANDELWAL DEPARTMENTAL STORE"
                   className="w-full uppercase text-xs px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                 />
               </div>
             </div>
 
-            {/* City, State, PIN Code inline structure */}
+            {/* City, State, PIN Code inline structure with Auto-Lookup */}
             <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="block text-[10.5px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">
@@ -382,22 +465,22 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
                   type="text"
                   value={to.city}
                   onChange={(e) => onChangeTo({ ...to, city: toUpperClean(e.target.value) })}
-                  placeholder="BENGALURU"
+                  placeholder="JABALPUR"
                   className="w-full uppercase text-xs font-semibold px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                 />
               </div>
 
               <div>
                 <label className="block text-[10.5px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">
-                  PIN CODE *
+                  PIN CODE * (Auto-City)
                 </label>
                 <input
                   type="text"
                   maxLength={6}
                   value={to.pinCode}
                   onChange={(e) => handlePinChange(e.target.value, true)}
-                  placeholder="560037"
-                  className="w-full font-mono text-xs font-bold px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-blue-500"
+                  placeholder="482002"
+                  className="w-full font-mono text-xs font-bold px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -410,7 +493,7 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
                   list="states-list"
                   value={to.state}
                   onChange={(e) => onChangeTo({ ...to, state: toUpperClean(e.target.value) })}
-                  placeholder="KARNATAKA"
+                  placeholder="MADHYA PRADESH"
                   className="w-full uppercase text-xs px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                 />
               </div>
@@ -425,7 +508,7 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
                 maxLength={10}
                 value={to.mobile || ''}
                 onChange={(e) => onChangeTo({ ...to, mobile: e.target.value.replace(/\D/g, '') })}
-                placeholder="9845098765"
+                placeholder="9898050483"
                 className="w-full font-mono text-xs font-bold px-2.5 py-1.5 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
               />
             </div>
@@ -433,17 +516,53 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
 
           {/* FROM (SENDER) FORM - COMPACT */}
           <div className="border border-slate-200 dark:border-slate-800 rounded-lg p-3 bg-slate-50/50 dark:bg-slate-800/30 space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-1.5 pb-1">
               <span className="font-bold text-xs tracking-wider text-slate-800 dark:text-slate-200">
                 FROM (SENDER ADDRESS) • Bottom-Right Box
               </span>
-              <button
-                type="button"
-                onClick={onOpenAddressBook}
-                className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer"
-              >
-                Pick Saved Sender
-              </button>
+
+              {/* Fast Action Buttons for FROM */}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={handleResetToMse}
+                  className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold text-blue-800 dark:text-blue-300 bg-blue-100/70 hover:bg-blue-200/80 dark:bg-blue-900/40 rounded transition-colors cursor-pointer"
+                  title="Reset sender to Maa Sharda Enterprises, Nagod (485446)"
+                >
+                  <RotateCcw className="w-3 h-3 text-blue-600" />
+                  <span>Default MSE</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleQuickClipboardPaste('FROM')}
+                  className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-200/80 hover:bg-slate-300 dark:bg-slate-800 rounded transition-colors cursor-pointer"
+                  title="Paste sender address from clipboard"
+                >
+                  <ClipboardPaste className="w-3 h-3" />
+                  <span>Paste</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onOpenAddressBook}
+                  className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-200/80 hover:bg-slate-300 dark:bg-slate-800 rounded transition-colors cursor-pointer"
+                  title="Pick saved sender branch from address book"
+                >
+                  <BookOpen className="w-3 h-3 text-blue-600" />
+                  <span>Book</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => saveAddressToBook(from, 'FROM')}
+                  className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100/80 hover:bg-emerald-200 dark:bg-emerald-950/60 rounded transition-colors cursor-pointer"
+                  title="Save sender to address book"
+                >
+                  <BookmarkPlus className="w-3 h-3 text-emerald-700" />
+                  <span>Save</span>
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -469,7 +588,7 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
                   maxLength={10}
                   value={from.mobile || ''}
                   onChange={(e) => onChangeFrom({ ...from, mobile: e.target.value.replace(/\D/g, '') })}
-                  placeholder="9827012345"
+                  placeholder="8982091190"
                   className="w-full font-mono text-xs px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                 />
               </div>
@@ -483,7 +602,7 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
                 type="text"
                 value={from.addressLine1}
                 onChange={(e) => onChangeFrom({ ...from, addressLine1: toUpperClean(e.target.value) })}
-                placeholder="SHOP 4, SIMARIYA CHOWK, MAIN ROAD"
+                placeholder="NEAR REST HOUSE, SATNA-PANNA ROAD, NH39"
                 className="w-full uppercase text-xs px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
               />
             </div>
@@ -491,13 +610,13 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
             <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-0.5">
-                  CITY
+                  CITY (Nagod)
                 </label>
                 <input
                   type="text"
                   value={from.city}
                   onChange={(e) => onChangeFrom({ ...from, city: toUpperClean(e.target.value) })}
-                  placeholder="SATNA"
+                  placeholder="NAGOD"
                   className="w-full uppercase text-xs px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                 />
               </div>
@@ -510,7 +629,7 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
                   maxLength={6}
                   value={from.pinCode}
                   onChange={(e) => handlePinChange(e.target.value, false)}
-                  placeholder="485001"
+                  placeholder="485446"
                   className="w-full font-mono text-xs px-2 py-1 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
                 />
               </div>
@@ -544,7 +663,7 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
             rows={6}
             value={pastedText}
             onChange={(e) => setPastedText(e.target.value)}
-            placeholder={`Paste raw text here, e.g.:\nRajesh Kumar Sharma\nSharma Trading Corp\nFlat 302, Sai Kripa Apts\nIndiranagar 1st stage, Near CMH Hospital\nBengaluru, Karnataka 560037\nPhone: 9845098765`}
+            placeholder={`Paste raw text here, e.g.:\nARPIT PANDEY\nAREA MANAGER\nSHREE MARUTI COURIER JABALPUR HUB\nHOUSE NO. 804, GATE NO.4 ROAD, SNEH NAGAR, KAMLA NEHRU WARD\nNEAR KHANDELWAL DEPARTMENTAL STORE\nJABALPUR, MADHYA PRADESH - 482002\nPhone: 9898050483`}
             className="w-full text-xs font-mono p-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-blue-500"
           />
 
@@ -576,29 +695,30 @@ export const AddressInputTabs: React.FC<AddressInputTabsProps> = ({
         </div>
       )}
 
-      {/* ================= METHOD 3: UPLOAD FILE (IMAGE / PDF) ================= */}
+      {/* ================= METHOD 3: UPLOAD FILE (IMAGE / PDF / DOC / XLS / TXT) ================= */}
       {activeTab === 'UPLOAD' && (
         <div className="space-y-3">
-          <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 rounded-xl p-6 text-center cursor-pointer transition-colors bg-slate-50 dark:bg-slate-800/40"
+          <div
+            className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 rounded-xl p-6 text-center cursor-pointer transition-colors bg-slate-50 dark:bg-slate-800/40"
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload className="w-8 h-8 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
             <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Click to browse or drop address slip image / PDF
+              Click to browse or drop address file (Image, PDF, Word, Excel, CSV, Text)
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              Supports PNG, JPG, WEBP, and PDF documents
+              Supports PNG, JPG, WEBP, PDF, DOCX/DOC, XLSX/XLS, CSV, and TXT files (100% offline)
             </div>
           </div>
 
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*,.pdf"
+            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) processImageFile(file);
+              if (file) processUniversalFile(file);
             }}
           />
 
